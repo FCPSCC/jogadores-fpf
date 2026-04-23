@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Acesso Restrito</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background:#f2f2f2;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+form {
+    background:white;
+    padding:30px;
+    border-radius:8px;
+    box-shadow:0 0 10px rgba(0,0,0,0.15);
+    width:300px;
+}
+input, button {
+    width:100%;
+    padding:8px;
+    margin-top:10px;
+}
+.erro {
+    color:red;
+    margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+<form method="post">
+    <h2>Acesso Restrito</h2>
+    <label>Password:</label>
+    <input type="password" name="password" required>
+    <button type="submit">Entrar</button>
+    {% if erro %}
+      <div class="erro">{{ erro }}</div>
+    {% endif %}
+</form>
+</body>
+</html>
