@@ -7,52 +7,29 @@ import os
 import csv
 from io import StringIO
 
+# ======================================================
+# APP
+# ======================================================
+
 app = Flask(__name__)
 
-# ======================================================
-# SEGURANÇA
-# ======================================================
-
-app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
-SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
-
-# ======================================================
-# BASE DE DADOS
-# ======================================================
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "chave-temporaria-123"
+)
+SITE_PASSWORD = os.environ.get(
+    "SITE_PASSWORD",
+    "MUDAR123"
+)
 
 DB_PATH = "jogadores_fpf.db"
 
+# ======================================================
+# UTILITÁRIOS
+# ======================================================
+
 def get_db():
     return sqlite3.connect(DB_PATH)
-
-# ======================================================
-# LOGIN
-# ======================================================
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    erro = None
-
-    if request.method == "POST":
-        password = request.form.get("password")
-
-        if password == SITE_PASSWORD:
-            session["autenticado"] = True
-            return redirect(url_for("index"))
-        else:
-            erro = "Password incorreta"
-
-    return render_template("login.html", erro=erro)
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-# ======================================================
-# LÓGICA NEGÓCIO
-# ======================================================
 
 def calcular_escalao(data_nascimento):
     try:
@@ -77,15 +54,47 @@ def calcular_escalao(data_nascimento):
         2008: "Juniores - Sub-18",
         2007: "Juniores - Sub-19",
     }
+
     return mapa.get(ano, "Sénior")
+
+# ======================================================
+# LOGIN
+# ======================================================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    erro = None
+
+    if request.method == "POST":
+        if request.form.get("password") == SITE_PASSWORD:
+            session["autenticado"] = True
+            return redirect(url_for("index"))
+        else:
+            erro = "Password incorreta"
+
+    return render_template("login.html", erro=erro)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+# ======================================================
+# QUERY PRINCIPAL
+# ======================================================
 
 def obter_jogadores(f):
     conn = get_db()
     c = conn.cursor()
 
     query = """
-        SELECT player_id, nome, data_nascimento,
-               clube, distrito, naturalidade
+        SELECT
+            player_id,
+            nome,
+            data_nascimento,
+            clube,
+            distrito,
+            naturalidade
         FROM jogadores
         WHERE 1=1
     """
@@ -108,19 +117,22 @@ def obter_jogadores(f):
         filtros_ativos = True
 
     if f["distrito"]:
-        query += f" AND distrito IN ({','.join(['?']*len(f['distrito']))})"
+        query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
         params.extend(f["distrito"])
         filtros_ativos = True
 
     if f["naturalidade"]:
-        query += f" AND naturalidade IN ({','.join(['?']*len(f['naturalidade']))})"
+        query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
         filtros_ativos = True
 
-    query += f" ORDER BY {f['sort']} {f['dir']}"
-
+    # 🔑 CORREÇÃO IMPORTANTE:
+    # - Sem filtros → últimos 50 (mais recentes)
+    # - Com filtros → ordenação escolhida
     if not filtros_ativos:
-        query += " LIMIT 50"
+        query += " ORDER BY player_id DESC LIMIT 50"
+    else:
+        query += f" ORDER BY {f['sort']} {f['dir']}"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -133,14 +145,19 @@ def obter_jogadores(f):
             continue
 
         jogadores.append((
-            r[0], r[1], r[2], r[3],
-            escalao, r[4], r[5]
+            r[0],  # ID
+            r[1],  # Nome
+            r[2],  # Nascimento
+            r[3],  # Clube
+            escalao,
+            r[4],  # Distrito
+            r[5]   # Naturalidade
         ))
 
     return jogadores
 
 # ======================================================
-# ROTAS PROTEGIDAS
+# PÁGINA PRINCIPAL (PROTEGIDA)
 # ======================================================
 
 @app.route("/")
@@ -156,7 +173,7 @@ def index():
         "distrito": request.args.getlist("distrito"),
         "naturalidade": request.args.getlist("naturalidade"),
         "sort": request.args.get("sort", "player_id"),
-        "dir": request.args.get("dir", "ASC")
+        "dir": request.args.get("dir", "ASC"),
     }
 
     jogadores = obter_jogadores(f)
@@ -190,7 +207,7 @@ def index():
     )
 
 # ======================================================
-# EXPORTAÇÃO
+# EXPORTAR PARA EXCEL (CSV)
 # ======================================================
 
 @app.route("/exportar")
@@ -198,26 +215,31 @@ def exportar():
     if not session.get("autenticado"):
         return redirect(url_for("login"))
 
-    f = request.args.to_dict(flat=False)
+    q = request.args.to_dict(flat=False)
 
     jogadores = obter_jogadores({
-        "nome": f.get("nome", [""])[0],
-        "clube": f.get("clube", [""])[0],
-        "ano_nasc": f.get("ano_nasc", [""])[0],
-        "escalao": f.get("escalao", []),
-        "distrito": f.get("distrito", []),
-        "naturalidade": f.get("naturalidade", []),
-        "sort": f.get("sort", ["player_id"])[0],
-        "dir": f.get("dir", ["ASC"])[0],
+        "nome": q.get("nome", [""])[0],
+        "clube": q.get("clube", [""])[0],
+        "ano_nasc": q.get("ano_nasc", [""])[0],
+        "escalao": q.get("escalao", []),
+        "distrito": q.get("distrito", []),
+        "naturalidade": q.get("naturalidade", []),
+        "sort": q.get("sort", ["player_id"])[0],
+        "dir": q.get("dir", ["ASC"])[0],
     })
 
     output = StringIO()
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["ID","Nome","Nascimento","Clube","Escalão","Distrito","Naturalidade","FPF"])
+
+    writer.writerow([
+        "ID", "Nome", "Nascimento", "Clube",
+        "Escalão", "Distrito", "Naturalidade", "FPF"
+    ])
 
     for j in jogadores:
         writer.writerow([
-            j[0], j[1], j[2], j[3], j[4], j[5], j[6],
+            j[0], j[1], j[2], j[3],
+            j[4], j[5], j[6],
             f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
         ])
 
