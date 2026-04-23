@@ -4,8 +4,7 @@ import os
 
 app = Flask(__name__)
 
-DB_PATH = r"C:\Users\augusto.roxo\Documents\Scripts\BD\jogadores_fpf.db"
-
+DB_PATH = "jogadores_fpf.db"
 
 def get_db():
     return sqlite3.connect(DB_PATH)
