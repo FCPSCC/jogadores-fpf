@@ -8,7 +8,7 @@ import csv
 from io import StringIO
 
 # ======================================================
-# APP
+# APP E SEGURANÇA
 # ======================================================
 
 app = Flask(__name__)
@@ -25,16 +25,19 @@ SITE_PASSWORD = os.environ.get(
 DB_PATH = "jogadores_fpf.db"
 
 # ======================================================
-# UTILITÁRIOS
+# BASE DE DADOS
 # ======================================================
 
 def get_db():
-    return sqlite3.connect(DB_PATH)
+    # timeout evita "database is locked"
+    return sqlite3.connect(DB_PATH, timeout=10)
 
-def calcular_escalao(data_nascimento):
-    try:
-        ano = int(data_nascimento.split("-")[2])
-    except:
+# ======================================================
+# ESCALÃO (A PARTIR DO ANO)
+# ======================================================
+
+def calcular_escalao_por_ano(ano_nascimento):
+    if not ano_nascimento:
         return "Desconhecido"
 
     mapa = {
@@ -55,7 +58,7 @@ def calcular_escalao(data_nascimento):
         2007: "Juniores - Sub-19",
     }
 
-    return mapa.get(ano, "Sénior")
+    return mapa.get(ano_nascimento, "Sénior")
 
 # ======================================================
 # LOGIN
@@ -89,12 +92,13 @@ def obter_jogadores(f):
 
     query = """
         SELECT
-            player_id,
-            nome,
-            data_nascimento,
-            clube,
-            distrito,
-            naturalidade
+            player_id,        -- r[0]
+            nome,             -- r[1]
+            data_nascimento,  -- r[2]
+            ano_nascimento,   -- r[3]
+            clube,            -- r[4]
+            distrito,         -- r[5]
+            naturalidade      -- r[6]
         FROM jogadores
         WHERE 1=1
     """
@@ -111,9 +115,9 @@ def obter_jogadores(f):
         params.append(f"%{f['clube']}%")
         filtros_ativos = True
 
-    if f["ano_nasc"]:
-        query += " AND substr(data_nascimento, -4) = ?"
-        params.append(f["ano_nasc"])
+    if f["ano_nasc"] and f["ano_nasc"].isdigit():
+        query += " AND ano_nascimento = ?"
+        params.append(int(f["ano_nasc"]))
         filtros_ativos = True
 
     if f["distrito"]:
@@ -126,13 +130,24 @@ def obter_jogadores(f):
         params.extend(f["naturalidade"])
         filtros_ativos = True
 
-    # 🔑 CORREÇÃO IMPORTANTE:
-    # - Sem filtros → últimos 50 (mais recentes)
-    # - Com filtros → ordenação escolhida
+    # Proteção contra ORDER BY inválido (ex.: "escalao")
+    COLUNAS_PERMITIDAS = [
+        "player_id",
+        "nome",
+        "data_nascimento",
+        "ano_nascimento",
+        "clube",
+        "distrito",
+        "naturalidade"
+    ]
+
     if not filtros_ativos:
         query += " ORDER BY player_id DESC LIMIT 50"
     else:
-        query += f" ORDER BY {f['sort']} {f['dir']}"
+        if f["sort"] in COLUNAS_PERMITIDAS:
+            query += f" ORDER BY {f['sort']} {f['dir']}"
+        else:
+            query += " ORDER BY player_id DESC"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -140,24 +155,26 @@ def obter_jogadores(f):
 
     jogadores = []
     for r in rows:
-        escalao = calcular_escalao(r[2])
+        escalao = calcular_escalao_por_ano(r[3])
+
         if f["escalao"] and escalao not in f["escalao"]:
             continue
 
+        # ORDEM CORRETA PARA O HTML
         jogadores.append((
-            r[0],  # ID
-            r[1],  # Nome
-            r[2],  # Nascimento
-            r[3],  # Clube
-            escalao,
-            r[4],  # Distrito
-            r[5]   # Naturalidade
+            r[0],      # ID
+            r[1],      # Nome
+            r[2],      # Nascimento
+            r[4],      # Clube
+            escalao,   # Escalão
+            r[5],      # Distrito
+            r[6]       # Naturalidade
         ))
 
     return jogadores
 
 # ======================================================
-# PÁGINA PRINCIPAL (PROTEGIDA)
+# PÁGINA PRINCIPAL
 # ======================================================
 
 @app.route("/")
@@ -180,9 +197,9 @@ def index():
 
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
+    c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL ORDER BY distrito")
     distritos = [r[0] for r in c.fetchall()]
-    c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL")
+    c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL ORDER BY naturalidade")
     naturalidades = [r[0] for r in c.fetchall()]
     conn.close()
 
@@ -207,7 +224,7 @@ def index():
     )
 
 # ======================================================
-# EXPORTAR PARA EXCEL (CSV)
+# EXPORTAÇÃO PARA EXCEL
 # ======================================================
 
 @app.route("/exportar")
@@ -232,14 +249,14 @@ def exportar():
     writer = csv.writer(output, delimiter=";")
 
     writer.writerow([
-        "ID", "Nome", "Nascimento", "Clube",
-        "Escalão", "Distrito", "Naturalidade", "FPF"
+        "ID", "Nome", "Nascimento",
+        "Clube", "Escalão",
+        "Distrito", "Naturalidade", "FPF"
     ])
 
     for j in jogadores:
         writer.writerow([
-            j[0], j[1], j[2], j[3],
-            j[4], j[5], j[6],
+            j[0], j[1], j[2], j[3], j[4], j[5], j[6],
             f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
         ])
 
