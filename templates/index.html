@@ -5,31 +5,32 @@
 <title>Base de Dados de Jogadores</title>
 
 <style>
-body { font-family: Arial, sans-serif; margin:0; }
+body { font-family: Arial, sans-serif; margin: 0; }
 header { background:#f0f0f0; padding:15px; border-bottom:1px solid #ccc; }
-.filtros { display:flex; flex-wrap:wrap; gap:12px; }
-.filtro { font-size:13px; }
-details { border:1px solid #bbb; background:#fff; padding:4px; min-width:220px; }
-summary { cursor:pointer; font-weight:bold; }
+.filtros { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+.filtro { font-size:13px; display:flex; flex-direction:column; }
+details { border:1px solid #bbb; padding:4px; min-width:210px; }
 .checkbox-list { max-height:180px; overflow-y:auto; }
+.actions { font-size:12px; margin-bottom:4px; }
+.actions a { cursor:pointer; color:#0066cc; }
+main { padding:15px; }
+.toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+
 table { border-collapse: collapse; width:100%; }
 th, td { border:1px solid #ccc; padding:6px; font-size:13px; }
 th { background:#f8f8f8; white-space:nowrap; }
-th a { text-decoration:none; color:black; margin-left:4px; }
-main { padding:15px; }
-.actions { font-size:12px; }
-.actions a { cursor:pointer; color:#0066cc; text-decoration:underline; }
+th a { text-decoration:none; color:black; }
 </style>
 
 <script>
-function marcarTodos(id) {
-    document.querySelectorAll("#" + id + " input[type=checkbox]").forEach(c => c.checked = true);
+function marcar(id){
+ document.querySelectorAll("#"+id+" input").forEach(c=>c.checked=true);
 }
-function desmarcarTodos(id) {
-    document.querySelectorAll("#" + id + " input[type=checkbox]").forEach(c => c.checked = false);
+function desmarcar(id){
+ document.querySelectorAll("#"+id+" input").forEach(c=>c.checked=false);
 }
-function limparFiltros() {
-    window.location = "/";
+function limpar(){
+ window.location="/";
 }
 </script>
 </head>
@@ -38,124 +39,97 @@ function limparFiltros() {
 
 <header>
 <form method="get" class="filtros">
-
-<div class="filtro">Nome<br>
-<input name="nome" value="{{ filtros.nome }}">
-</div>
-
-<div class="filtro">Clube<br>
-<input name="clube" value="{{ filtros.clube }}">
-</div>
-
-<div class="filtro">Ano Nascimento<br>
-<input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}">
-</div>
+<div class="filtro">Nome<input name="nome" value="{{ filtros.nome }}"></div>
+<div class="filtro">Clube<input name="clube" value="{{ filtros.clube }}"></div>
+<div class="filtro">Ano<input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}"></div>
 
 <div class="filtro">
-<details>
-<summary>Escalões</summary>
+<details><summary>Escalão</summary>
 <div class="actions">
-<a onclick="marcarTodos('escalao-box')">Selecionar tudo</a> |
-<a onclick="desmarcarTodos('escalao-box')">Desmarcar tudo</a>
+<a onclick="marcar('esc')">Tudo</a> | <a onclick="desmarcar('esc')">Nada</a>
 </div>
-<div class="checkbox-list" id="escalao-box">
+<div class="checkbox-list" id="esc">
 {% for e in escaloes %}
-<label>
-<input type="checkbox" name="escalao" value="{{ e }}"
-{% if e in filtros.escalao %}checked{% endif %}>
-{{ e }}
-</label><br>
+<label><input type="checkbox" name="escalao" value="{{ e }}"
+{% if e in filtros.escalao %}checked{% endif %}> {{ e }}</label><br>
 {% endfor %}
 </div>
 </details>
 </div>
 
 <div class="filtro">
-<details>
-<summary>Distrito</summary>
+<details><summary>Distrito</summary>
 <div class="actions">
-<a onclick="marcarTodos('distrito-box')">Selecionar tudo</a> |
-<a onclick="desmarcarTodos('distrito-box')">Desmarcar tudo</a>
+<a onclick="marcar('dist')">Tudo</a> | <a onclick="desmarcar('dist')">Nada</a>
 </div>
-<div class="checkbox-list" id="distrito-box">
+<div class="checkbox-list" id="dist">
 {% for d in distritos %}
-<label>
-<input type="checkbox" name="distrito" value="{{ d }}"
-{% if d in filtros.distrito %}checked{% endif %}>
-{{ d }}
-</label><br>
+<label><input type="checkbox" name="distrito" value="{{ d }}"
+{% if d in filtros.distrito %}checked{% endif %}> {{ d }}</label><br>
 {% endfor %}
 </div>
 </details>
 </div>
 
 <div class="filtro">
-<details>
-<summary>Naturalidade</summary>
+<details><summary>Naturalidade</summary>
 <div class="actions">
-<a onclick="marcarTodos('naturalidade-box')">Selecionar tudo</a> |
-<a onclick="desmarcarTodos('naturalidade-box')">Desmarcar tudo</a>
+<a onclick="marcar('nat')">Tudo</a> | <a onclick="desmarcar('nat')">Nada</a>
 </div>
-<div class="checkbox-list" id="naturalidade-box">
+<div class="checkbox-list" id="nat">
 {% for n in naturalidades %}
-<label>
-<input type="checkbox" name="naturalidade" value="{{ n }}"
-{% if n in filtros.naturalidade %}checked{% endif %}>
-{{ n }}
-</label><br>
+<label><input type="checkbox" name="naturalidade" value="{{ n }}"
+{% if n in filtros.naturalidade %}checked{% endif %}> {{ n }}</label><br>
 {% endfor %}
 </div>
 </details>
 </div>
 
-<div class="filtro" style="align-self:flex-end">
+<div class="filtro" style="margin-top:auto;">
 <button type="submit">Pesquisar</button>
-<button type="button" onclick="limparFiltros()">Limpar filtros</button>
+<button type="button" onclick="limpar()">Limpar</button>
 </div>
-
 </form>
 </header>
 
 <main>
 
-<p><strong>Total de resultados:</strong> {{ total_resultados }}</p>
-<p><strong>Último ID processado:</strong> {{ ultimo_id }}</p>
+<div class="toolbar">
+<div><b>Total de resultados:</b> {{ total }}</div>
+<div>
+<a href="/exportar?{{ request.query_string.decode() }}">📥 Exportar para Excel</a>
+</div>
+</div>
 
 <table>
 <tr>
+<th>ID</th>
+<th>Nome</th>
+<th>Nascimento</th>
+<th>Clube</th>
 <th>Escalão</th>
-{% for c, nome in [
-("player_id","ID"),
-("nome","Nome"),
-("data_nascimento","Nascimento"),
-("clube","Clube"),
-("epoca","Época"),
-("distrito","Distrito"),
-("naturalidade","Naturalidade")
-] %}
-<th>
-{{ nome }}
-<a href="?sort={{ c }}&dir=asc">&#9650;</a>
-<a href="?sort={{ c }}&dir=desc">&#9660;</a>
-</th>
-{% endfor %}
+<th>Distrito</th>
+<th>Naturalidade</th>
+<th>FPF</th>
 </tr>
 
 {% for j in jogadores %}
 <tr>
-<td>{{ j[3] }}</td>
 <td>{{ j[0] }}</td>
 <td>{{ j[1] }}</td>
 <td>{{ j[2] }}</td>
+<td>{{ j[3] }}</td>
 <td>{{ j[4] }}</td>
 <td>{{ j[5] }}</td>
 <td>{{ j[6] }}</td>
-<td>{{ j[7] }}</td>
+<td>
+<a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ j[0] }}" target="_blank">FPF</a>
+</td>
 </tr>
 {% endfor %}
 </table>
 
 </main>
-
 </body>
 </html>
+``

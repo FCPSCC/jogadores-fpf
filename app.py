@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
 import sqlite3
 import os
+import csv
+from io import StringIO
 
 app = Flask(__name__)
 
 DB_PATH = "jogadores_fpf.db"
+
 
 def get_db():
     return sqlite3.connect(DB_PATH)
@@ -12,7 +15,7 @@ def get_db():
 
 def calcular_escalao(data_nascimento):
     try:
-        ano = int(data_nascimento.split("-")[2])  # DD-MM-AAAA
+        ano = int(data_nascimento.split("-")[2])
     except:
         return "Desconhecido"
 
@@ -37,105 +40,89 @@ def calcular_escalao(data_nascimento):
     return mapa.get(ano, "Sénior")
 
 
-@app.route("/")
-def index():
-    nome = request.args.get("nome", "").strip()
-    clube = request.args.get("clube", "").strip()
-    ano_nasc = request.args.get("ano_nasc", "").strip()
-
-    distritos_sel = request.args.getlist("distrito")
-    naturalidades_sel = request.args.getlist("naturalidade")
-    escaloes_sel = request.args.getlist("escalao")
-
-    sort = request.args.get("sort", "player_id")
-    direcao = request.args.get("dir", "desc")
-
-    colunas_validas = {
-        "player_id": "player_id",
-        "nome": "nome",
-        "data_nascimento": "data_nascimento",
-        "clube": "clube",
-        "epoca": "epoca",
-        "distrito": "distrito",
-        "naturalidade": "naturalidade"
-    }
-
-    coluna_sort = colunas_validas.get(sort, "player_id")
-    direcao_sql = "ASC" if direcao == "asc" else "DESC"
-
+def obter_jogadores(filtros):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL ORDER BY distrito")
-    distritos = [d[0] for d in cursor.fetchall()]
-
-    cursor.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL ORDER BY naturalidade")
-    naturalidades = [n[0] for n in cursor.fetchall()]
-
     query = """
-        SELECT
-            player_id,
-            nome,
-            data_nascimento,
-            clube,
-            epoca,
-            distrito,
-            naturalidade
+        SELECT player_id, nome, data_nascimento, clube, distrito, naturalidade
         FROM jogadores
         WHERE 1=1
     """
     params = []
     filtros_ativos = False
 
-    if nome:
+    if filtros["nome"]:
         query += " AND nome LIKE ?"
-        params.append(f"%{nome}%")
+        params.append(f"%{filtros['nome']}%")
         filtros_ativos = True
 
-    if clube:
+    if filtros["clube"]:
         query += " AND clube LIKE ?"
-        params.append(f"%{clube}%")
+        params.append(f"%{filtros['clube']}%")
         filtros_ativos = True
 
-    if ano_nasc:
+    if filtros["ano_nasc"]:
         query += " AND substr(data_nascimento, -4) = ?"
-        params.append(ano_nasc)
+        params.append(filtros["ano_nasc"])
         filtros_ativos = True
 
-    if distritos_sel:
-        query += f" AND distrito IN ({','.join(['?'] * len(distritos_sel))})"
-        params.extend(distritos_sel)
+    if filtros["distrito"]:
+        query += f" AND distrito IN ({','.join(['?']*len(filtros['distrito']))})"
+        params.extend(filtros["distrito"])
         filtros_ativos = True
 
-    if naturalidades_sel:
-        query += f" AND naturalidade IN ({','.join(['?'] * len(naturalidades_sel))})"
-        params.extend(naturalidades_sel)
+    if filtros["naturalidade"]:
+        query += f" AND naturalidade IN ({','.join(['?']*len(filtros['naturalidade']))})"
+        params.extend(filtros["naturalidade"])
         filtros_ativos = True
 
-    query += f" ORDER BY {coluna_sort} {direcao_sql}"
+    query += f" ORDER BY {filtros['sort']} {filtros['dir']}"
 
     if not filtros_ativos:
         query += " LIMIT 50"
 
     cursor.execute(query, params)
-    linhas = cursor.fetchall()
+    rows = cursor.fetchall()
+    conn.close()
 
     jogadores = []
-    for j in linhas:
-        escalao = calcular_escalao(j[2])
-        if escaloes_sel and escalao not in escaloes_sel:
+    for r in rows:
+        escalao = calcular_escalao(r[2])
+        if filtros["escalao"] and escalao not in filtros["escalao"]:
             continue
 
         jogadores.append((
-            j[0], j[1], j[2], escalao,
-            j[3], j[4], j[5], j[6]
+            r[0], r[1], r[2], r[3],
+            escalao, r[4], r[5]
         ))
 
-    total_resultados = len(jogadores)
+    return jogadores
 
-    cursor.execute("SELECT valor FROM controlo WHERE chave='ultimo_player_id'")
-    ultimo_id = cursor.fetchone()[0]
 
+@app.route("/", methods=["GET"])
+def index():
+    filtros = {
+        "nome": request.args.get("nome", ""),
+        "clube": request.args.get("clube", ""),
+        "ano_nasc": request.args.get("ano_nasc", ""),
+        "distrito": request.args.getlist("distrito"),
+        "naturalidade": request.args.getlist("naturalidade"),
+        "escalao": request.args.getlist("escalao"),
+        "sort": request.args.get("sort", "player_id"),
+        "dir": request.args.get("dir", "DESC")
+    }
+
+    jogadores = obter_jogadores(filtros)
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
+    distritos = [r[0] for r in c.fetchall()]
+    c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL")
+    naturalidades = [r[0] for r in c.fetchall()]
+    c.execute("SELECT valor FROM controlo WHERE chave='ultimo_player_id'")
+    ultimo_id = c.fetchone()[0]
     conn.close()
 
     escaloes = [
@@ -145,34 +132,53 @@ def index():
         "Infantis - Sub-12","Infantis - Sub-13",
         "Iniciados - Sub-14","Iniciados - Sub-15",
         "Juvenis - Sub-16","Juvenis - Sub-17",
-        "Juniores - Sub-18","Juniores - Sub-19",
-        "Sénior"
+        "Juniores - Sub-18","Juniores - Sub-19","Sénior"
     ]
 
     return render_template(
         "index.html",
         jogadores=jogadores,
-        total_resultados=total_resultados,
-        ultimo_id=ultimo_id,
+        total=len(jogadores),
         distritos=distritos,
         naturalidades=naturalidades,
         escaloes=escaloes,
-        sort=sort,
-        direcao=direcao,
-        filtros={
-            "nome": nome,
-            "clube": clube,
-            "ano_nasc": ano_nasc,
-            "distrito": distritos_sel,
-            "naturalidade": naturalidades_sel,
-            "escalao": escaloes_sel
-        }
+        filtros=filtros,
+        ultimo_id=ultimo_id
+    )
+
+
+@app.route("/exportar")
+def exportar_excel():
+    filtros = request.args.to_dict(flat=False)
+    jogadores = obter_jogadores({
+        "nome": filtros.get("nome", [""])[0],
+        "clube": filtros.get("clube", [""])[0],
+        "ano_nasc": filtros.get("ano_nasc", [""])[0],
+        "distrito": filtros.get("distrito", []),
+        "naturalidade": filtros.get("naturalidade", []),
+        "escalao": filtros.get("escalao", []),
+        "sort": filtros.get("sort", ["player_id"])[0],
+        "dir": filtros.get("dir", ["DESC"])[0],
+    })
+
+    output = StringIO()
+    writer = csv.writer(output, delimiter=";")
+    writer.writerow(["ID","Nome","Nascimento","Clube","Escalão","Distrito","Naturalidade","FPF"])
+
+    for j in jogadores:
+        writer.writerow([
+            j[0], j[1], j[2], j[3],
+            j[4], j[5], j[6],
+            f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=jogadores.csv"}
     )
 
 
 if __name__ == "__main__":
-    import os
-    print("BD usada:", os.path.abspath(DB_PATH))
-
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
