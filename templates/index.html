@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Base de Dados de Jogadores</title>
+
+<style>
+body { font-family: Arial, sans-serif; margin:0; }
+header { background:#f0f0f0; padding:15px; border-bottom:1px solid #ccc; }
+.filtros { display:flex; flex-wrap:wrap; gap:12px; }
+.filtro { font-size:13px; }
+details { border:1px solid #bbb; background:#fff; padding:4px; min-width:220px; }
+summary { cursor:pointer; font-weight:bold; }
+.checkbox-list { max-height:180px; overflow-y:auto; }
+table { border-collapse: collapse; width:100%; }
+th, td { border:1px solid #ccc; padding:6px; font-size:13px; }
+th { background:#f8f8f8; white-space:nowrap; }
+th a { text-decoration:none; color:black; margin-left:4px; }
+main { padding:15px; }
+.actions { font-size:12px; }
+.actions a { cursor:pointer; color:#0066cc; text-decoration:underline; }
+</style>
+
+<script>
+function marcarTodos(id) {
+    document.querySelectorAll("#" + id + " input[type=checkbox]").forEach(c => c.checked = true);
+}
+function desmarcarTodos(id) {
+    document.querySelectorAll("#" + id + " input[type=checkbox]").forEach(c => c.checked = false);
+}
+function limparFiltros() {
+    window.location = "/";
+}
+</script>
+</head>
+
+<body>
+
+<header>
+<form method="get" class="filtros">
+
+<div class="filtro">Nome<br>
+<input name="nome" value="{{ filtros.nome }}">
+</div>
+
+<div class="filtro">Clube<br>
+<input name="clube" value="{{ filtros.clube }}">
+</div>
+
+<div class="filtro">Ano Nascimento<br>
+<input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}">
+</div>
+
+<div class="filtro">
+<details>
+<summary>Escalões</summary>
+<div class="actions">
+<a onclick="marcarTodos('escalao-box')">Selecionar tudo</a> |
+<a onclick="desmarcarTodos('escalao-box')">Desmarcar tudo</a>
+</div>
+<div class="checkbox-list" id="escalao-box">
+{% for e in escaloes %}
+<label>
+<input type="checkbox" name="escalao" value="{{ e }}"
+{% if e in filtros.escalao %}checked{% endif %}>
+{{ e }}
+</label><br>
+{% endfor %}
+</div>
+</details>
+</div>
+
+<div class="filtro">
+<details>
+<summary>Distrito</summary>
+<div class="actions">
+<a onclick="marcarTodos('distrito-box')">Selecionar tudo</a> |
+<a onclick="desmarcarTodos('distrito-box')">Desmarcar tudo</a>
+</div>
+<div class="checkbox-list" id="distrito-box">
+{% for d in distritos %}
+<label>
+<input type="checkbox" name="distrito" value="{{ d }}"
+{% if d in filtros.distrito %}checked{% endif %}>
+{{ d }}
+</label><br>
+{% endfor %}
+</div>
+</details>
+</div>
+
+<div class="filtro">
+<details>
+<summary>Naturalidade</summary>
+<div class="actions">
+<a onclick="marcarTodos('naturalidade-box')">Selecionar tudo</a> |
+<a onclick="desmarcarTodos('naturalidade-box')">Desmarcar tudo</a>
+</div>
+<div class="checkbox-list" id="naturalidade-box">
+{% for n in naturalidades %}
+<label>
+<input type="checkbox" name="naturalidade" value="{{ n }}"
+{% if n in filtros.naturalidade %}checked{% endif %}>
+{{ n }}
+</label><br>
+{% endfor %}
+</div>
+</details>
+</div>
+
+<div class="filtro" style="align-self:flex-end">
+<button type="submit">Pesquisar</button>
+<button type="button" onclick="limparFiltros()">Limpar filtros</button>
+</div>
+
+</form>
+</header>
+
+<main>
+
+<p><strong>Total de resultados:</strong> {{ total_resultados }}</p>
+<p><strong>Último ID processado:</strong> {{ ultimo_id }}</p>
+
+<table>
+<tr>
+<th>Escalão</th>
+{% for c, nome in [
+("player_id","ID"),
+("nome","Nome"),
+("data_nascimento","Nascimento"),
+("clube","Clube"),
+("epoca","Época"),
+("distrito","Distrito"),
+("naturalidade","Naturalidade")
+] %}
+<th>
+{{ nome }}
+<a href="?sort={{ c }}&dir=asc">&#9650;</a>
+<a href="?sort={{ c }}&dir=desc">&#9660;</a>
+</th>
+{% endfor %}
+</tr>
+
+{% for j in jogadores %}
+<tr>
+<td>{{ j[3] }}</td>
+<td>{{ j[0] }}</td>
+<td>{{ j[1] }}</td>
+<td>{{ j[2] }}</td>
+<td>{{ j[4] }}</td>
+<td>{{ j[5] }}</td>
+<td>{{ j[6] }}</td>
+<td>{{ j[7] }}</td>
+</tr>
+{% endfor %}
+</table>
+
+</main>
+
+</body>
+</html>
