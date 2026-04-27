@@ -33,12 +33,12 @@ def get_db():
     return sqlite3.connect(DB_PATH, timeout=10)
 
 # ======================================================
-# ESCALÃO (A PARTIR DO ANO)
+# CATEGORIA (A PARTIR DO ANO)
 # ======================================================
 
-def calcular_escalao_por_ano(ano_nascimento):
+def calcular_categoria_por_ano(ano_nascimento):
     if not ano_nascimento:
-        return "Desconhecido"
+        return None
 
     mapa = {
         2021: "Petizes - Sub-5",
@@ -98,7 +98,8 @@ def obter_jogadores(f):
             ano_nascimento,   -- r[3]
             clube,            -- r[4]
             distrito,         -- r[5]
-            naturalidade      -- r[6]
+            naturalidade,     -- r[6]
+            escalao           -- r[7]  (FPF)
         FROM jogadores
         WHERE 1=1
     """
@@ -130,7 +131,6 @@ def obter_jogadores(f):
         params.extend(f["naturalidade"])
         filtros_ativos = True
 
-    # Proteção contra ORDER BY inválido (ex.: "escalao")
     COLUNAS_PERMITIDAS = [
         "player_id",
         "nome",
@@ -138,7 +138,8 @@ def obter_jogadores(f):
         "ano_nascimento",
         "clube",
         "distrito",
-        "naturalidade"
+        "naturalidade",
+        "escalao"
     ]
 
     if not filtros_ativos:
@@ -155,18 +156,18 @@ def obter_jogadores(f):
 
     jogadores = []
     for r in rows:
-        escalao = calcular_escalao_por_ano(r[3])
+        categoria = calcular_categoria_por_ano(r[3])
 
-        if f["escalao"] and escalao not in f["escalao"]:
+        if f["escalao"] and categoria and categoria not in f["escalao"]:
             continue
 
-        # ORDEM CORRETA PARA O HTML
         jogadores.append((
             r[0],      # ID
             r[1],      # Nome
             r[2],      # Nascimento
             r[4],      # Clube
-            escalao,   # Escalão
+            r[7],      # Escalão FPF
+            categoria, # Categoria calculada
             r[5],      # Distrito
             r[6]       # Naturalidade
         ))
@@ -203,15 +204,7 @@ def index():
     naturalidades = [r[0] for r in c.fetchall()]
     conn.close()
 
-    escaloes = [
-        "Petizes - Sub-5","Petizes - Sub-6","Petizes - Sub-7",
-        "Traquinas - Sub-8","Traquinas - Sub-9",
-        "Benjamins - Sub-10","Benjamins - Sub-11",
-        "Infantis - Sub-12","Infantis - Sub-13",
-        "Iniciados - Sub-14","Iniciados - Sub-15",
-        "Juvenis - Sub-16","Juvenis - Sub-17",
-        "Juniores - Sub-18","Juniores - Sub-19","Sénior"
-    ]
+    escaloes = list(dict.fromkeys(j[5] for j in jogadores if j[5]))
 
     return render_template(
         "index.html",
@@ -250,13 +243,13 @@ def exportar():
 
     writer.writerow([
         "ID", "Nome", "Nascimento",
-        "Clube", "Escalão",
+        "Clube", "Escalão", "Categoria",
         "Distrito", "Naturalidade", "FPF"
     ])
 
     for j in jogadores:
         writer.writerow([
-            j[0], j[1], j[2], j[3], j[4], j[5], j[6],
+            j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7],
             f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
         ])
 

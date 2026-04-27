@@ -44,42 +44,54 @@ function limpar(){
 <div class="filtro">Ano<input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}"></div>
 
 <div class="filtro">
-<details><summary>Escalão</summary>
+<details>
+<summary>Categoria</summary>
 <div class="actions">
 <a onclick="marcar('esc')">Tudo</a> | <a onclick="desmarcar('esc')">Nada</a>
 </div>
 <div class="checkbox-list" id="esc">
 {% for e in escaloes %}
-<label><input type="checkbox" name="escalao" value="{{ e }}"
-{% if e in filtros.escalao %}checked{% endif %}> {{ e }}</label><br>
+<label>
+<input type="checkbox" name="escalao" value="{{ e }}"
+{% if e in filtros.escalao %}checked{% endif %}>
+{{ e }}
+</label><br>
 {% endfor %}
 </div>
 </details>
 </div>
 
 <div class="filtro">
-<details><summary>Distrito</summary>
+<details>
+<summary>Distrito</summary>
 <div class="actions">
 <a onclick="marcar('dist')">Tudo</a> | <a onclick="desmarcar('dist')">Nada</a>
 </div>
 <div class="checkbox-list" id="dist">
 {% for d in distritos %}
-<label><input type="checkbox" name="distrito" value="{{ d }}"
-{% if d in filtros.distrito %}checked{% endif %}> {{ d }}</label><br>
+<label>
+<input type="checkbox" name="distrito" value="{{ d }}"
+{% if d in filtros.distrito %}checked{% endif %}>
+{{ d }}
+</label><br>
 {% endfor %}
 </div>
 </details>
 </div>
 
 <div class="filtro">
-<details><summary>Naturalidade</summary>
+<details>
+<summary>Naturalidade</summary>
 <div class="actions">
 <a onclick="marcar('nat')">Tudo</a> | <a onclick="desmarcar('nat')">Nada</a>
 </div>
 <div class="checkbox-list" id="nat">
 {% for n in naturalidades %}
-<label><input type="checkbox" name="naturalidade" value="{{ n }}"
-{% if n in filtros.naturalidade %}checked{% endif %}> {{ n }}</label><br>
+<label>
+<input type="checkbox" name="naturalidade" value="{{ n }}"
+{% if n in filtros.naturalidade %}checked{% endif %}>
+{{ n }}
+</label><br>
 {% endfor %}
 </div>
 </details>
@@ -110,17 +122,22 @@ function limpar(){
     ("data_nascimento", "Nascimento"),
     ("clube", "Clube"),
     ("escalao", "Escalão"),
+    ("categoria", "Categoria"),
     ("distrito", "Distrito"),
     ("naturalidade", "Naturalidade")
 ] %}
 
 {% for col, label in cols %}
 <th>
-  {{ label }}
-  <a href="?{{ request.query_string.decode() | replace('sort=' ~ col ~ '&dir=asc', '') | replace('sort=' ~ col ~ '&dir=desc', '') }}{% if request.query_string %}&{% endif %}sort={{ col }}&dir=asc"
-     title="Ordenar A–Z">▲</a>
-  <a href="?{{ request.query_string.decode() | replace('sort=' ~ col ~ '&dir=asc', '') | replace('sort=' ~ col ~ '&dir=desc', '') }}{% if request.query_string %}&{% endif %}sort={{ col }}&dir=desc"
-     title="Ordenar Z–A">▼</a>
+{{ label }}
+<a href="?{{ request.query_string.decode()
+| replace('sort=' ~ col ~ '&dir=asc', '')
+| replace('sort=' ~ col ~ '&dir=desc', '')
+}}{% if request.query_string %}&{% endif %}sort={{ col }}&dir=asc">▲</a>
+<a href="?{{ request.query_string.decode()
+| replace('sort=' ~ col ~ '&dir=asc', '')
+| replace('sort=' ~ col ~ '&dir=desc', '')
+}}{% if request.query_string %}&{% endif %}sort={{ col }}&dir=desc">▼</a>
 </th>
 {% endfor %}
 
@@ -131,22 +148,23 @@ function limpar(){
 <tbody>
 {% for j in jogadores %}
 <tr>
-  <td>{{ j[0] }}</td> {# ID #}
-  <td>{{ j[1] }}</td> {# Nome #}
-  <td>{{ j[2] }}</td> {# Nascimento #}
-  <td>{{ j[3] }}</td> {# Clube #}
-  <td>{{ j[4] }}</td> {# Escalão #}
-  <td>{{ j[5] }}</td> {# Distrito #}
-  <td>{{ j[6] }}</td> {# Naturalidade #}
-  <td>
-    <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ j[0] }}"
-       target="_blank">FPF</a>
-  </td>
+<td>{{ j[0] }}</td>   <!-- ID -->
+<td>{{ j[1] }}</td>   <!-- Nome -->
+<td>{{ j[2] }}</td>   <!-- Nascimento -->
+<td>{{ j[3] }}</td>   <!-- Clube -->
+<td>{{ j[4] or "—" }}</td>  <!-- Escalão FPF -->
+<td>{{ j[5] or "—" }}</td>  <!-- Categoria -->
+<td>{{ j[6] }}</td>   <!-- Distrito -->
+<td>{{ j[7] }}</td>   <!-- Naturalidade -->
+<td>
+<a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ j[0] }}"
+target="_blank">FPF</a>
+</td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
+
 </main>
 </body>
 </html>
-``
