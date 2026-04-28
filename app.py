@@ -41,21 +41,21 @@ def calcular_categoria_por_ano(ano_nascimento):
         return None
 
     mapa = {
-        2021: "Petizes - Sub-5",
-        2020: "Petizes - Sub-6",
-        2019: "Petizes - Sub-7",
-        2018: "Traquinas - Sub-8",
-        2017: "Traquinas - Sub-9",
-        2016: "Benjamins - Sub-10",
-        2015: "Benjamins - Sub-11",
-        2014: "Infantis - Sub-12",
-        2013: "Infantis - Sub-13",
-        2012: "Iniciados - Sub-14",
-        2011: "Iniciados - Sub-15",
-        2010: "Juvenis - Sub-16",
-        2009: "Juvenis - Sub-17",
-        2008: "Juniores - Sub-18",
-        2007: "Juniores - Sub-19",
+        2021: "Sub-5",
+        2020: "Sub-6",
+        2019: "Sub-7",
+        2018: "Sub-8",
+        2017: "Sub-9",
+        2016: "Sub-10",
+        2015: "Sub-11",
+        2014: "Sub-12",
+        2013: "Sub-13",
+        2012: "Sub-14",
+        2011: "Sub-15",
+        2010: "Sub-16",
+        2009: "Sub-17",
+        2008: "Sub-18",
+        2007: "Sub-19",
     }
 
     return mapa.get(ano_nascimento, "Sénior")
