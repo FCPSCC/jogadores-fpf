@@ -49,7 +49,7 @@ def obter_ano_referencia_epoca():
     return hoje.year - 1
 
 # ======================================================
-# CATEGORIA (Sub-X / Sénior) – REGRA FINAL
+# CATEGORIA FEDERATIVA (CORRETA)
 # ======================================================
 
 def calcular_categoria_por_ano(ano_nascimento):
@@ -66,7 +66,7 @@ def calcular_categoria_por_ano(ano_nascimento):
     return "Sénior"
 
 # ======================================================
-# ORDEM DO ESCALÃO FPF (robusta a variações)
+# ORDEM DO ESCALÃO FPF
 # ======================================================
 
 def ordem_escaloes_fpf(txt):
@@ -213,15 +213,8 @@ def index():
 
     jogadores = obter_jogadores(f)
 
-    def ordem_categoria(c):
-        if c == "Sénior":
-            return 99
-        return int(c.replace("Sub-", ""))
-
-    categorias = sorted(
-        {j[5] for j in jogadores if j[5]},
-        key=ordem_categoria
-    )
+    # ✅ LISTA COMPLETA E FIXA DE CATEGORIAS
+    categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
 
     conn = get_db()
     c = conn.cursor()
