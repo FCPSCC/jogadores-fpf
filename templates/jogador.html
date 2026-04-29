@@ -5,13 +5,29 @@
 <title>{{ jogador[1] }}</title>
 
 <style>
+:root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --primary: #1f3c88;
+    --secondary: #6c757d;
+    --border: #e0e0e0;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: #222;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 a {
-    color: #0066cc;
+    color: var(--primary);
     text-decoration: none;
 }
 
@@ -19,120 +35,212 @@ a:hover {
     text-decoration: underline;
 }
 
-h1 {
-    margin-bottom: 5px;
+/* topo */
+.top-bar {
+    margin-bottom: 15px;
+    font-weight: 600;
 }
 
-.section {
-    border-top: 1px solid #ccc;
-    margin-top: 15px;
-    padding-top: 10px;
+/* cabeçalho do jogador */
+.player-header {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 20px;
+}
+
+/* foto */
+.photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* info principal */
+.player-name {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+.player-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 6px;
+    column-gap: 20px;
+    font-size: 14px;
 }
 
 .label {
-    font-weight: bold;
-    color: #444;
+    color: var(--secondary);
+    font-weight: 600;
 }
 
 .value {
-    margin-left: 5px;
+    font-weight: 500;
 }
 
-.stats {
-    display: flex;
-    gap: 40px;
-    margin-top: 10px;
+/* secções */
+.section {
+    margin-top: 25px;
 }
 
-.stat-box {
+.section-title {
     font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* estatísticas */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
     text-align: center;
 }
 
+.stat-value {
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--secondary);
+    margin-top: 3px;
+}
+
+/* info adicional */
+.info-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+/* footer */
 .footer {
-    margin-top: 20px;
+    margin-top: 25px;
     font-size: 12px;
-    color: #666;
+    color: var(--secondary);
+    display: flex;
+    justify-content: space-between;
 }
 </style>
 </head>
 
 <body>
 
-<!-- Voltar -->
-<p>
-<a href="/">⬅ Voltar à lista</a>
-</p>
+<div class="container">
 
-<h1>{{ jogador[1] }}</h1>
+    <div class="top-bar">
+        ← Voltar à lista</a>
+    </div>
 
-<div>
-    <span class="label">Clube:</span>
-    <span class="value">{{ jogador[3] or "—" }}</span>
-</div>
+    <!-- CABEÇALHO -->
+    <div class="player-header">
 
-<div>
-    <span class="label">Data de nascimento:</span>
-    <span class="value">{{ jogador[2] or "—" }}</span>
-</div>
-
-<div>
-    <span class="label">Naturalidade:</span>
-    <span class="value">{{ jogador[4] or "—" }}</span>
-</div>
-
-<div>
-    <span class="label">Escalão (FPF):</span>
-    <span class="value">{{ jogador[5] or "—" }}</span>
-</div>
-
-<div class="section">
-    <h2>Estatísticas (ZeroZero)</h2>
-
-    {% if zz %}
-        <div class="stats">
-            <div class="stat-box">
-                <div class="label">Jogos</div>
-                <div>{{ zz[0] }}</div>
-            </div>
-
-            <div class="stat-box">
-                <div class="label">Golos</div>
-                <div>{{ zz[1] }}</div>
-            </div>
-        </div>
-
-        <div style="margin-top:10px;">
-            <span class="label">Competição:</span>
-            <span class="value">{{ zz[2] or "—" }}</span>
-        </div>
-
-        <div>
-            <span class="label">Época:</span>
-            <span class="value">{{ zz[3] or "—" }}</span>
-        </div>
-
-        <div>
-            <span class="label">Última atualização:</span>
-            <span class="value">{{ zz[4] or "—" }}</span>
-        </div>
-
-        <div style="margin-top:10px;">
-            {% if zz[5] %}
-                <a href="{{ zz[5] }}" target="_blank">Ver no ZeroZero</a> |
+        <div class="photo">
+            {% if zz and zz[5] %}
+                src="https://cdn-img.staticzz.com/img/jogadores/{{ zz[5].split('/')[-1] }}.jpg"
+                     alt="Foto do jogador"
+                     onerror="this.src='/static/sem_foto.png';">
+            {% else %}
+                
             {% endif %}
-            <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}" target="_blank">
-                Ver na FPF
-            </a>
         </div>
 
-    {% else %}
-        <p>Este jogador ainda não tem estatísticas do ZeroZero associadas.</p>
-    {% endif %}
-</div>
+        <div>
+            <div class="player-name">{{ jogador[1] }}</div>
 
-<div class="footer">
-ID interno: {{ jogador[0] }}
+            <div class="player-meta">
+                <div><span class="label">Clube:</span> <span class="value">{{ jogador[3] or "—" }}</span></div>
+                <div><span class="label">Data nasc.:</span> <span class="value">{{ jogador[2] or "—" }}</span></div>
+                <div><span class="label">Naturalidade:</span> <span class="value">{{ jogador[4] or "—" }}</span></div>
+                <div><span class="label">Escalão (FPF):</span> <span class="value">{{ jogador[5] or "—" }}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div class="section">
+        <div class="section-title">Estatísticas · ZeroZero</div>
+
+        {% if zz %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ zz[0] }}</div>
+                <div class="stat-label">Jogos</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">{{ zz[1] }}</div>
+                <div class="stat-label">Golos</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">{{ zz[3] }}</div>
+                <div class="stat-label">Época</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">
+                    {% if zz[0] and zz[1] %}
+                        {{ "%.2f"|format(zz[1] / zz[0]) }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </div>
+                <div class="stat-label">Golos/Jogo</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="info-card">
+                <p><span class="label">Competição:</span> {{ zz[2] }}</p>
+                <p><span class="label">Última atualização:</span> {{ zz[4] }}</p>
+                <p>
+                    {% if zz[5] %}
+                        Ver no ZeroZero</a> |
+                    {% endif %}
+                    https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}Ver na FPF</a>
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <div class="info-card">
+            Este jogador ainda não tem estatísticas do ZeroZero associadas.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        <div>ID interno: {{ jogador[0] }}</div>
+        <div>FPF + ZeroZero</div>
+    </div>
+
 </div>
 
 </body>
