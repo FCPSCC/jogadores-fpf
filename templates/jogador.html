@@ -1,11 +1,4 @@
-<!DOCTYPE html>>FPF + ZeroZero</div>
-    </div>
-
-</div>
-
-</body>
-</html>
-``
+<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -20,7 +13,6 @@
     --border: #e0e0e0;
 }
 
-/* fundo geral */
 body {
     font-family: "Segoe UI", Arial, sans-serif;
     margin: 0;
@@ -50,7 +42,7 @@ a:hover {
     font-weight: 600;
 }
 
-/* cabeçalho */
+/* header */
 .player-header {
     background: var(--card);
     padding: 20px;
@@ -175,20 +167,18 @@ a:hover {
 <div class="container">
 
     <div class="top-bar">
-        ← Voltar à lista</a>
+        ← <a href="/">Voltar à lista</a>
     </div>
 
-    <!-- HEADER DO JOGADOR -->
+    <!-- HEADER -->
     <div class="player-header {% if jogador[3] and 'porto' in jogador[3]|lower %}porto{% endif %}">
 
         <div class="photo">
-            {% if zz and zz[5] %}
-                https://cdn-img.staticzz.com/img/jogadores/{{ zz[5].split('/')[-1] }}.jpg"
-                     alt="Foto do jogador"
-                     onerror="this.src='/static/sem_foto.png';">
-            {% else %}
-                
-            {% endif %}
+            <img
+                src="{% if zz and zz[5] %}https://cdn-img.staticzz.com/img/jogadores/{{ zz[5].split('/')[-1] }}.jpg{% else %}/static/sem_foto.png{% endif %}"
+                alt="Foto do jogador"
+                onerror="this.src='/static/sem_foto.png';"
+            >
         </div>
 
         <div>
@@ -241,10 +231,8 @@ a:hover {
                 <p><span class="label">Competição:</span> {{ zz[2] }}</p>
                 <p><span class="label">Última atualização:</span> {{ zz[4] }}</p>
                 <p>
-                    {% if zz[5] %}
-                        https://www.zerozero.pt{{ zz[5] }}Ver no ZeroZero</a> |
-                    {% endif %}
-                    https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}Ver na FPF</a>
+                    <a href="{{ zz[5] }}" target="_blank">Ver no ZeroZero</a> |
+                    <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}" target="_blank">Ver na FPF</a>
                 </p>
             </div>
         </div>
@@ -257,3 +245,10 @@ a:hover {
 
     <div class="footer">
         <div>ID interno: {{ jogador[0] }}</div>
+        <div>FPF + ZeroZero</div>
+    </div>
+
+</div>
+
+</body>
+</html>
