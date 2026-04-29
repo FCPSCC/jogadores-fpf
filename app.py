@@ -29,7 +29,6 @@ DB_PATH = "jogadores_fpf.db"
 # ======================================================
 
 def get_db():
-    # timeout evita "database is locked"
     return sqlite3.connect(DB_PATH, timeout=10)
 
 # ======================================================
@@ -41,6 +40,39 @@ def calcular_categoria_por_ano(ano_nascimento):
         return None
     idade = 2026 - ano_nascimento
     return f"Sub-{idade}"
+
+# ======================================================
+# FUNÇÃO DE ORDENAÇÃO DO ESCALÃO FPF
+# ======================================================
+
+def ordem_escaloes_fpf(txt):
+    """
+    Permite ordenar corretamente os escalões FPF,
+    mesmo com variações de texto da FPF
+    """
+    if not txt:
+        return 99
+
+    t = txt.lower()
+
+    if "petiz" in t:
+        return 1
+    if "traquina" in t:
+        return 2
+    if "benjamim" in t:
+        return 3
+    if "infantil" in t:
+        return 4
+    if "iniciado" in t:
+        return 5
+    if "juvenil" in t:
+        return 6
+    if "junior" in t or "júnior" in t:
+        return 7
+    if "senior" in t or "sénior" in t:
+        return 8
+
+    return 99
 
 # ======================================================
 # LOGIN
@@ -86,43 +118,28 @@ def obter_jogadores(f):
         WHERE 1=1
     """
     params = []
-    filtros_ativos = False
 
     if f["nome"]:
         query += " AND nome LIKE ?"
         params.append(f"%{f['nome']}%")
-        filtros_ativos = True
 
     if f["clube"]:
         query += " AND clube LIKE ?"
         params.append(f"%{f['clube']}%")
-        filtros_ativos = True
 
     if f["ano_nasc"].isdigit():
         query += " AND ano_nascimento = ?"
         params.append(int(f["ano_nasc"]))
-        filtros_ativos = True
 
     if f["distrito"]:
         query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
         params.extend(f["distrito"])
-        filtros_ativos = True
 
     if f["naturalidade"]:
         query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
-        filtros_ativos = True
 
-    COLUNAS_PERMITIDAS = [
-        "player_id", "nome", "data_nascimento",
-        "ano_nascimento", "clube",
-        "distrito", "naturalidade", "escalao"
-    ]
-
-    if filtros_ativos and f["sort"] in COLUNAS_PERMITIDAS:
-        query += f" ORDER BY {f['sort']} {f['dir']}"
-    else:
-        query += " ORDER BY player_id DESC LIMIT 50"
+    query += f" ORDER BY {f['sort']} {f['dir']}"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -135,14 +152,13 @@ def obter_jogadores(f):
 
         # FILTRO Categoria (Sub-X)
         if f["categoria"]:
-            if not categoria:
-                continue
-            if categoria not in f["categoria"]:
+            if not categoria or categoria not in f["categoria"]:
                 continue
 
         # FILTRO Escalão FPF
-        if f["escalao_fpf"] and r[7] not in f["escalao_fpf"]:
-            continue
+        if f["escalao_fpf"]:
+            if not r[7] or r[7] not in f["escalao_fpf"]:
+                continue
 
         jogadores.append((
             r[0],      # ID
@@ -150,7 +166,7 @@ def obter_jogadores(f):
             r[2],      # Nascimento
             r[4],      # Clube
             r[7],      # Escalão FPF
-            categoria, # Categoria Sub-X
+            categoria, # Categoria (Sub-X)
             r[5],      # Distrito
             r[6]       # Naturalidade
         ))
@@ -180,13 +196,13 @@ def index():
 
     jogadores = obter_jogadores(f)
 
-    # ================= Categorias (Sub-X) ordenadas =================
+    # ================= CATEGORIAS Sub-X =================
     categorias = sorted(
         {j[5] for j in jogadores if j[5]},
         key=lambda x: int(x.replace("Sub-", ""))
     )
 
-    # ================= Escalões FPF (SEMPRE DA BD) =================
+    # ================= ESCALÕES FPF (SEMPRE DA BD) =================
     conn = get_db()
     c = conn.cursor()
 
@@ -196,25 +212,13 @@ def index():
         WHERE escalao IS NOT NULL
           AND escalao != ''
     """)
-    escalaoes_fpf_bd = {r[0] for r in c.fetchall()}
 
-    ORDEM_ESCALOES_FPF = [
-        "Junior-G (Petiz)",
-        "Junior-F (Traquina)",
-        "Junior-E (Benjamim)",
-        "Junior-D (Infantil)",
-        "Junior-C (Iniciado)",
-        "Junior-B (Juvenil)",
-        "Junior-A (Júnior)",
-        "Sénior"
-    ]
+    escalaoes_fpf = sorted(
+        [r[0] for r in c.fetchall()],
+        key=ordem_escaloes_fpf
+    )
 
-    escalaoes_fpf = [
-        e for e in ORDEM_ESCALOES_FPF
-        if e in escalaoes_fpf_bd
-    ]
-
-    # ================= Distritos e Naturalidade =================
+    # ================= DISTRITOS / NATURALIDADE =================
     c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL ORDER BY distrito")
     distritos = [r[0] for r in c.fetchall()]
 
@@ -261,14 +265,15 @@ def exportar():
     writer = csv.writer(output, delimiter=";")
 
     writer.writerow([
-        "ID", "Nome", "Nascimento", "Clube",
-        "Escalão", "Categoria", "Distrito",
-        "Naturalidade", "FPF"
+        "ID","Nome","Nascimento","Clube",
+        "Escalão","Categoria",
+        "Distrito","Naturalidade","FPF"
     ])
 
     for j in jogadores:
         writer.writerow([
-            j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7],
+            j[0], j[1], j[2], j[3],
+            j[4], j[5], j[6], j[7],
             f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
         ])
 
