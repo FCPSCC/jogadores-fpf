@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>{{ jogador[1] }}</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+h1 {
+    margin-bottom: 5px;
+}
+
+.section {
+    border-top: 1px solid #ccc;
+    margin-top: 15px;
+    padding-top: 10px;
+}
+
+.label {
+    font-weight: bold;
+    color: #444;
+}
+
+.value {
+    margin-left: 5px;
+}
+
+.stats {
+    display: flex;
+    gap: 40px;
+    margin-top: 10px;
+}
+
+.stat-box {
+    font-size: 18px;
+    text-align: center;
+}
+
+.footer {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #666;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Voltar -->
+<p>
+<a href="/">⬅ Voltar à lista</a>
+</p>
+
+<h1>{{ jogador[1] }}</h1>
+
+<div>
+    <span class="label">Clube:</span>
+    <span class="value">{{ jogador[3] or "—" }}</span>
+</div>
+
+<div>
+    <span class="label">Data de nascimento:</span>
+    <span class="value">{{ jogador[2] or "—" }}</span>
+</div>
+
+<div>
+    <span class="label">Naturalidade:</span>
+    <span class="value">{{ jogador[4] or "—" }}</span>
+</div>
+
+<div>
+    <span class="label">Escalão (FPF):</span>
+    <span class="value">{{ jogador[5] or "—" }}</span>
+</div>
+
+<div class="section">
+    <h2>Estatísticas (ZeroZero)</h2>
+
+    {% if zz %}
+        <div class="stats">
+            <div class="stat-box">
+                <div class="label">Jogos</div>
+                <div>{{ zz[0] }}</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="label">Golos</div>
+                <div>{{ zz[1] }}</div>
+            </div>
+        </div>
+
+        <div style="margin-top:10px;">
+            <span class="label">Competição:</span>
+            <span class="value">{{ zz[2] or "—" }}</span>
+        </div>
+
+        <div>
+            <span class="label">Época:</span>
+            <span class="value">{{ zz[3] or "—" }}</span>
+        </div>
+
+        <div>
+            <span class="label">Última atualização:</span>
+            <span class="value">{{ zz[4] or "—" }}</span>
+        </div>
+
+        <div style="margin-top:10px;">
+            {% if zz[5] %}
+                <a href="{{ zz[5] }}" target="_blank">Ver no ZeroZero</a> |
+            {% endif %}
+            <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}" target="_blank">
+                Ver na FPF
+            </a>
+        </div>
+
+    {% else %}
+        <p>Este jogador ainda não tem estatísticas do ZeroZero associadas.</p>
+    {% endif %}
+</div>
+
+<div class="footer">
+ID interno: {{ jogador[0] }}
+</div>
+
+</body>
+</html>

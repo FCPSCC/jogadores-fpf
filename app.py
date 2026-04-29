@@ -38,18 +38,13 @@ def get_db():
 # ======================================================
 
 def obter_ano_referencia_epoca():
-    """
-    Devolve o ano base da época desportiva atual.
-    Ex:
-      2025/26 -> 2025
-    """
     hoje = date.today()
     if hoje.month >= 7:
         return hoje.year
     return hoje.year - 1
 
 # ======================================================
-# CATEGORIA FEDERATIVA (REGRA CORRETA)
+# CATEGORIA FEDERATIVA
 # ======================================================
 
 def calcular_categoria_por_ano(ano_nascimento):
@@ -57,19 +52,16 @@ def calcular_categoria_por_ano(ano_nascimento):
         return None
 
     ano_epoca = obter_ano_referencia_epoca()
-
-    # REGRA FEDERATIVA CORRETA:
-    # Sub-X = ano_epoca - ano_nascimento + 1
     sub = ano_epoca - ano_nascimento + 1
 
     if sub < 5:
-        return None           # abaixo de Sub-5
+        return None
     if 5 <= sub <= 19:
         return f"Sub-{sub}"
     return "Sénior"
 
 # ======================================================
-# ORDEM DO ESCALÃO FPF
+# ORDEM ESCALÃO FPF
 # ======================================================
 
 def ordem_escaloes_fpf(txt):
@@ -118,11 +110,11 @@ def obter_jogadores(f):
             player_id,
             nome,
             data_nascimento,
-            ano_nascimento,
             clube,
+            escalao,
+            ano_nascimento,
             distrito,
-            naturalidade,
-            escalao
+            naturalidade
         FROM jogadores
         WHERE 1=1
     """
@@ -148,27 +140,7 @@ def obter_jogadores(f):
         query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
 
-    COLUNAS_OK = {
-        "player_id", "nome", "data_nascimento",
-        "ano_nascimento", "clube",
-        "distrito", "naturalidade", "escalao"
-    }
-
-    ordem = "player_id DESC"
-    if f["sort"] in COLUNAS_OK:
-        direcao = "ASC" if f["dir"].upper() == "ASC" else "DESC"
-        ordem = f"{f['sort']} {direcao}"
-
-    sem_filtros = not any([
-        f["nome"], f["clube"], f["ano_nasc"],
-        f["categoria"], f["escalao_fpf"],
-        f["distrito"], f["naturalidade"]
-    ])
-
-    if sem_filtros:
-        query += f" ORDER BY {ordem} LIMIT 30"
-    else:
-        query += f" ORDER BY {ordem}"
+    query += " ORDER BY player_id DESC"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -176,19 +148,25 @@ def obter_jogadores(f):
 
     jogadores = []
     for r in rows:
-        categoria = calcular_categoria_por_ano(r[3])
+        categoria = calcular_categoria_por_ano(r[5])
 
         if f["categoria"]:
             if not categoria or categoria not in f["categoria"]:
                 continue
 
         if f["escalao_fpf"]:
-            if not r[7] or r[7] not in f["escalao_fpf"]:
+            if not r[4] or r[4] not in f["escalao_fpf"]:
                 continue
 
         jogadores.append((
-            r[0], r[1], r[2], r[4],
-            r[7], categoria, r[5], r[6]
+            r[0],  # ID
+            r[1],  # Nome
+            r[2],  # Nascimento
+            r[3],  # Clube
+            r[4],  # Escalão
+            categoria,  # Categoria
+            r[6],  # Distrito
+            r[7],  # Naturalidade
         ))
 
     return jogadores
@@ -210,13 +188,10 @@ def index():
         "escalao_fpf": request.args.getlist("escalao_fpf"),
         "distrito": request.args.getlist("distrito"),
         "naturalidade": request.args.getlist("naturalidade"),
-        "sort": request.args.get("sort", "player_id"),
-        "dir": request.args.get("dir", "DESC"),
     }
 
     jogadores = obter_jogadores(f)
 
-    # LISTA FIXA DE CATEGORIAS
     categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
 
     conn = get_db()
@@ -227,7 +202,6 @@ def index():
         FROM jogadores
         WHERE escalao IS NOT NULL AND escalao != ''
     """)
-
     escalaoes_fpf = sorted(
         [r[0] for r in c.fetchall()],
         key=ordem_escaloes_fpf
@@ -253,6 +227,56 @@ def index():
     )
 
 # ======================================================
+# FICHA DO ATLETA (NOVO)
+# ======================================================
+
+@app.route("/jogador/<int:player_id>")
+def ficha_jogador(player_id):
+    if not session.get("autenticado"):
+        return redirect("/login")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT
+            player_id,
+            nome,
+            data_nascimento,
+            clube,
+            naturalidade,
+            escalao
+        FROM jogadores
+        WHERE player_id = ?
+    """, (player_id,))
+    jogador = c.fetchone()
+
+    if not jogador:
+        conn.close()
+        return "Jogador não encontrado", 404
+
+    c.execute("""
+        SELECT
+            jogos,
+            golos,
+            competicao,
+            epoca,
+            ultima_atualizacao,
+            zz_player_url
+        FROM estatisticas_zerozero
+        WHERE player_id = ?
+    """, (player_id,))
+    zz = c.fetchone()
+
+    conn.close()
+
+    return render_template(
+        "jogador.html",
+        jogador=jogador,
+        zz=zz
+    )
+
+# ======================================================
 # EXPORTAR
 # ======================================================
 
@@ -261,19 +285,17 @@ def exportar():
     if not session.get("autenticado"):
         return redirect("/login")
 
-    q = request.args.to_dict(flat=False)
+    f = {
+        "nome": request.args.get("nome", ""),
+        "clube": request.args.get("clube", ""),
+        "ano_nasc": request.args.get("ano_nasc", ""),
+        "categoria": request.args.getlist("categoria"),
+        "escalao_fpf": request.args.getlist("escalao_fpf"),
+        "distrito": request.args.getlist("distrito"),
+        "naturalidade": request.args.getlist("naturalidade"),
+    }
 
-    jogadores = obter_jogadores({
-        "nome": q.get("nome", [""])[0],
-        "clube": q.get("clube", [""])[0],
-        "ano_nasc": q.get("ano_nasc", [""])[0],
-        "categoria": q.get("categoria", []),
-        "escalao_fpf": q.get("escalao_fpf", []),
-        "distrito": q.get("distrito", []),
-        "naturalidade": q.get("naturalidade", []),
-        "sort": q.get("sort", ["player_id"])[0],
-        "dir": q.get("dir", ["DESC"])[0],
-    })
+    jogadores = obter_jogadores(f)
 
     output = StringIO()
     writer = csv.writer(output, delimiter=";")

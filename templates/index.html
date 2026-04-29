@@ -63,7 +63,7 @@ function limpar(){
 </details>
 </div>
 
-<!-- ============ ESCALÃO FPF (NOVO) ============ -->
+<!-- ============ ESCALÃO FPF ============ -->
 <div class="filtro">
 <details>
 <summary>Escalão (FPF)</summary>
@@ -171,7 +171,12 @@ function limpar(){
 {% for j in jogadores %}
 <tr>
 <td>{{ j[0] }}</td>
-<td>{{ j[1] }}</td>
+
+<!-- ✅ ÚNICA ALTERAÇÃO: nome clicável -->
+<td>
+<a href="/jogador/{{ j[0] }}">{{ j[1] }}</a>
+</td>
+
 <td>{{ j[2] }}</td>
 <td>{{ j[3] }}</td>
 <td>{{ j[4] or "—" }}</td>
