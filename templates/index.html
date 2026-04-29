@@ -39,21 +39,42 @@ function limpar(){
 
 <header>
 <form method="get" class="filtros">
+
 <div class="filtro">Nome<input name="nome" value="{{ filtros.nome }}"></div>
 <div class="filtro">Clube<input name="clube" value="{{ filtros.clube }}"></div>
 <div class="filtro">Ano<input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}"></div>
 
+<!-- ================== CATEGORIA ================== -->
 <div class="filtro">
 <details>
 <summary>Categoria</summary>
 <div class="actions">
-<a onclick="marcar('esc')">Tudo</a> | <a onclick="desmarcar('esc')">Nada</a>
+<a onclick="marcar('cat')">Tudo</a> | <a onclick="desmarcar('cat')">Nada</a>
 </div>
-<div class="checkbox-list" id="esc">
-{% for e in escaloes %}
+<div class="checkbox-list" id="cat">
+{% for c in categorias %}
 <label>
-<input type="checkbox" name="escalao" value="{{ e }}"
-{% if e in filtros.escalao %}checked{% endif %}>
+<input type="checkbox" name="categoria" value="{{ c }}"
+{% if c in filtros.categoria %}checked{% endif %}>
+{{ c }}
+</label><br>
+{% endfor %}
+</div>
+</details>
+</div>
+
+<!-- ============ ESCALÃO FPF (NOVO) ============ -->
+<div class="filtro">
+<details>
+<summary>Escalão (FPF)</summary>
+<div class="actions">
+<a onclick="marcar('fpf')">Tudo</a> | <a onclick="desmarcar('fpf')">Nada</a>
+</div>
+<div class="checkbox-list" id="fpf">
+{% for e in escalaoes_fpf %}
+<label>
+<input type="checkbox" name="escalao_fpf" value="{{ e }}"
+{% if e in filtros.escalao_fpf %}checked{% endif %}>
 {{ e }}
 </label><br>
 {% endfor %}
@@ -61,6 +82,7 @@ function limpar(){
 </details>
 </div>
 
+<!-- ================== DISTRITO ================== -->
 <div class="filtro">
 <details>
 <summary>Distrito</summary>
@@ -79,6 +101,7 @@ function limpar(){
 </details>
 </div>
 
+<!-- ================= NATURALIDADE ================= -->
 <div class="filtro">
 <details>
 <summary>Naturalidade</summary>
@@ -101,6 +124,7 @@ function limpar(){
 <button type="submit">Pesquisar</button>
 <button type="button" onclick="limpar()">Limpar</button>
 </div>
+
 </form>
 </header>
 
@@ -126,21 +150,19 @@ function limpar(){
     ("distrito", "Distrito"),
     ("naturalidade", "Naturalidade")
 ] %}
-
 {% for col, label in cols %}
 <th>
 {{ label }}
 <a href="?{{ request.query_string.decode()
-| replace('sort=' ~ col ~ '&dir=asc', '')
-| replace('sort=' ~ col ~ '&dir=desc', '')
-}}{% if request.query_string %}&{% endif %}sort={{ col }}&dir=asc">▲</a>
+| replace('sort=' ~ col ~ '&amp;dir=asc', '')
+| replace('sort=' ~ col ~ '&amp;dir=desc', '')
+}}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=asc">▲</a>
 <a href="?{{ request.query_string.decode()
-| replace('sort=' ~ col ~ '&dir=asc', '')
-| replace('sort=' ~ col ~ '&dir=desc', '')
-}}{% if request.query_string %}&{% endif %}sort={{ col }}&dir=desc">▼</a>
+| replace('sort=' ~ col ~ '&amp;dir=asc', '')
+| replace('sort=' ~ col ~ '&amp;dir=desc', '')
+}}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=desc">▼</a>
 </th>
 {% endfor %}
-
 <th>FPF</th>
 </tr>
 </thead>
@@ -148,17 +170,16 @@ function limpar(){
 <tbody>
 {% for j in jogadores %}
 <tr>
-<td>{{ j[0] }}</td>   <!-- ID -->
-<td>{{ j[1] }}</td>   <!-- Nome -->
-<td>{{ j[2] }}</td>   <!-- Nascimento -->
-<td>{{ j[3] }}</td>   <!-- Clube -->
-<td>{{ j[4] or "—" }}</td>  <!-- Escalão FPF -->
-<td>{{ j[5] or "—" }}</td>  <!-- Categoria -->
-<td>{{ j[6] }}</td>   <!-- Distrito -->
-<td>{{ j[7] }}</td>   <!-- Naturalidade -->
+<td>{{ j[0] }}</td>
+<td>{{ j[1] }}</td>
+<td>{{ j[2] }}</td>
+<td>{{ j[3] }}</td>
+<td>{{ j[4] or "—" }}</td>
+<td>{{ j[5] or "—" }}</td>
+<td>{{ j[6] }}</td>
+<td>{{ j[7] }}</td>
 <td>
-<a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ j[0] }}"
-target="_blank">FPF</a>
+<a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ j[0] }}" target="_blank">FPF</a>
 </td>
 </tr>
 {% endfor %}
