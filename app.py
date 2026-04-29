@@ -49,7 +49,7 @@ def obter_ano_referencia_epoca():
     return hoje.year - 1
 
 # ======================================================
-# CATEGORIA FEDERATIVA (CORRETA)
+# CATEGORIA FEDERATIVA (REGRA CORRETA)
 # ======================================================
 
 def calcular_categoria_por_ano(ano_nascimento):
@@ -57,12 +57,15 @@ def calcular_categoria_por_ano(ano_nascimento):
         return None
 
     ano_epoca = obter_ano_referencia_epoca()
-    idade = ano_epoca - ano_nascimento
 
-    if idade < 5:
-        return "Sub-5"
-    if 5 <= idade <= 19:
-        return f"Sub-{idade}"
+    # REGRA FEDERATIVA CORRETA:
+    # Sub-X = ano_epoca - ano_nascimento + 1
+    sub = ano_epoca - ano_nascimento + 1
+
+    if sub < 5:
+        return None           # abaixo de Sub-5
+    if 5 <= sub <= 19:
+        return f"Sub-{sub}"
     return "Sénior"
 
 # ======================================================
@@ -213,7 +216,7 @@ def index():
 
     jogadores = obter_jogadores(f)
 
-    # ✅ LISTA COMPLETA E FIXA DE CATEGORIAS
+    # LISTA FIXA DE CATEGORIAS
     categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
 
     conn = get_db()
