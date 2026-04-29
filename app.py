@@ -98,7 +98,7 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL
+# QUERY PRINCIPAL (CORRIGIDA – LIMIT SE NÃO HOUVER FILTROS)
 # ======================================================
 
 def obter_jogadores(f):
@@ -120,27 +120,38 @@ def obter_jogadores(f):
     """
     params = []
 
+    tem_filtros = False
+
     if f["nome"]:
         query += " AND nome LIKE ?"
         params.append(f"%{f['nome']}%")
+        tem_filtros = True
 
     if f["clube"]:
         query += " AND clube LIKE ?"
         params.append(f"%{f['clube']}%")
+        tem_filtros = True
 
     if f["ano_nasc"].isdigit():
         query += " AND ano_nascimento = ?"
         params.append(int(f["ano_nasc"]))
+        tem_filtros = True
 
     if f["distrito"]:
         query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
         params.extend(f["distrito"])
+        tem_filtros = True
 
     if f["naturalidade"]:
         query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
+        tem_filtros = True
 
-    query += " ORDER BY player_id DESC"
+    # ✅ CORREÇÃO DO ERRO 502 / OOM
+    if not tem_filtros:
+        query += " ORDER BY player_id DESC LIMIT 100"
+    else:
+        query += " ORDER BY player_id DESC"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -159,14 +170,14 @@ def obter_jogadores(f):
                 continue
 
         jogadores.append((
-            r[0],  # ID
-            r[1],  # Nome
-            r[2],  # Nascimento
-            r[3],  # Clube
-            r[4],  # Escalão
-            categoria,  # Categoria
-            r[6],  # Distrito
-            r[7],  # Naturalidade
+            r[0],      # ID
+            r[1],      # Nome
+            r[2],      # Nascimento
+            r[3],      # Clube
+            r[4],      # Escalão
+            categoria, # Categoria
+            r[6],      # Distrito
+            r[7],      # Naturalidade
         ))
 
     return jogadores
@@ -227,7 +238,7 @@ def index():
     )
 
 # ======================================================
-# FICHA DO ATLETA (NOVO)
+# FICHA DO ATLETA
 # ======================================================
 
 @app.route("/jogador/<int:player_id>")
