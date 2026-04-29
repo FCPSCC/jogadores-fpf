@@ -8,7 +8,7 @@ import csv
 from io import StringIO
 
 # ======================================================
-# APP E SEGURANÇA
+# APP
 # ======================================================
 
 app = Flask(__name__)
@@ -17,6 +17,7 @@ app.secret_key = os.environ.get(
     "SECRET_KEY",
     "chave-temporaria-123"
 )
+
 SITE_PASSWORD = os.environ.get(
     "SITE_PASSWORD",
     "MUDAR123"
@@ -25,7 +26,7 @@ SITE_PASSWORD = os.environ.get(
 DB_PATH = "jogadores_fpf.db"
 
 # ======================================================
-# BASE DE DADOS
+# DB
 # ======================================================
 
 def get_db():
@@ -35,43 +36,27 @@ def get_db():
 # CATEGORIA (Sub-X)
 # ======================================================
 
-def calcular_categoria_por_ano(ano_nascimento):
-    if not ano_nascimento:
+def calcular_categoria_por_ano(ano):
+    if not ano:
         return None
-    idade = 2026 - ano_nascimento
-    return f"Sub-{idade}"
+    return f"Sub-{2026 - ano}"
 
 # ======================================================
-# FUNÇÃO DE ORDENAÇÃO DO ESCALÃO FPF
+# ORDEM ESCALÃO FPF (robusta)
 # ======================================================
 
 def ordem_escaloes_fpf(txt):
-    """
-    Permite ordenar corretamente os escalões FPF,
-    mesmo com variações de texto da FPF
-    """
     if not txt:
         return 99
-
     t = txt.lower()
-
-    if "petiz" in t:
-        return 1
-    if "traquina" in t:
-        return 2
-    if "benjamim" in t:
-        return 3
-    if "infantil" in t:
-        return 4
-    if "iniciado" in t:
-        return 5
-    if "juvenil" in t:
-        return 6
-    if "junior" in t or "júnior" in t:
-        return 7
-    if "senior" in t or "sénior" in t:
-        return 8
-
+    if "petiz" in t: return 1
+    if "traquina" in t: return 2
+    if "benjamim" in t: return 3
+    if "infantil" in t: return 4
+    if "iniciado" in t: return 5
+    if "juvenil" in t: return 6
+    if "junior" in t or "júnior" in t: return 7
+    if "senior" in t or "sénior" in t: return 8
     return 99
 
 # ======================================================
@@ -81,30 +66,27 @@ def ordem_escaloes_fpf(txt):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     erro = None
-
     if request.method == "POST":
         if request.form.get("password") == SITE_PASSWORD:
             session["autenticado"] = True
-            return redirect(url_for("index"))
-        else:
-            erro = "Password incorreta"
-
+            return redirect("/")
+        erro = "Password incorreta"
     return render_template("login.html", erro=erro)
 
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL
+# QUERY PRINCIPAL (SEGURA)
 # ======================================================
 
 def obter_jogadores(f):
     conn = get_db()
     c = conn.cursor()
 
-    query = """
+    base_query = """
         SELECT
             player_id,
             nome,
@@ -120,67 +102,81 @@ def obter_jogadores(f):
     params = []
 
     if f["nome"]:
-        query += " AND nome LIKE ?"
+        base_query += " AND nome LIKE ?"
         params.append(f"%{f['nome']}%")
 
     if f["clube"]:
-        query += " AND clube LIKE ?"
+        base_query += " AND clube LIKE ?"
         params.append(f"%{f['clube']}%")
 
     if f["ano_nasc"].isdigit():
-        query += " AND ano_nascimento = ?"
+        base_query += " AND ano_nascimento = ?"
         params.append(int(f["ano_nasc"]))
 
     if f["distrito"]:
-        query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
+        base_query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
         params.extend(f["distrito"])
 
     if f["naturalidade"]:
-        query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
+        base_query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
 
-    query += f" ORDER BY {f['sort']} {f['dir']}"
+    # ---------- PROTEÇÃO DE ORDER BY ----------
+    COLUNAS_OK = {
+        "player_id", "nome", "data_nascimento",
+        "ano_nascimento", "clube", "distrito",
+        "naturalidade", "escalao"
+    }
+    ordem = "player_id DESC"
+    if f["sort"] in COLUNAS_OK:
+        direcao = "ASC" if f["dir"].upper() == "ASC" else "DESC"
+        ordem = f"{f['sort']} {direcao}"
 
-    c.execute(query, params)
+    # ---------- LIMIT SE NÃO HOUVER FILTROS ----------
+    sem_filtros = not any([
+        f["nome"], f["clube"], f["ano_nasc"],
+        f["categoria"], f["escalao_fpf"],
+        f["distrito"], f["naturalidade"]
+    ])
+
+    if sem_filtros:
+        base_query += f" ORDER BY {ordem} LIMIT 30"
+    else:
+        base_query += f" ORDER BY {ordem}"
+
+    c.execute(base_query, params)
     rows = c.fetchall()
     conn.close()
 
     jogadores = []
-
     for r in rows:
         categoria = calcular_categoria_por_ano(r[3])
 
-        # FILTRO Categoria (Sub-X)
+        # Filtro Categoria
         if f["categoria"]:
             if not categoria or categoria not in f["categoria"]:
                 continue
 
-        # FILTRO Escalão FPF
+        # Filtro Escalão FPF
         if f["escalao_fpf"]:
             if not r[7] or r[7] not in f["escalao_fpf"]:
                 continue
 
         jogadores.append((
-            r[0],      # ID
-            r[1],      # Nome
-            r[2],      # Nascimento
-            r[4],      # Clube
-            r[7],      # Escalão FPF
-            categoria, # Categoria (Sub-X)
-            r[5],      # Distrito
-            r[6]       # Naturalidade
+            r[0], r[1], r[2], r[4],
+            r[7], categoria, r[5], r[6]
         ))
 
     return jogadores
 
 # ======================================================
-# PÁGINA PRINCIPAL
+# INDEX
 # ======================================================
 
 @app.route("/")
 def index():
     if not session.get("autenticado"):
-        return redirect(url_for("login"))
+        return redirect("/login")
 
     f = {
         "nome": request.args.get("nome", ""),
@@ -191,39 +187,36 @@ def index():
         "distrito": request.args.getlist("distrito"),
         "naturalidade": request.args.getlist("naturalidade"),
         "sort": request.args.get("sort", "player_id"),
-        "dir": request.args.get("dir", "ASC"),
+        "dir": request.args.get("dir", "DESC"),
     }
 
     jogadores = obter_jogadores(f)
 
-    # ================= CATEGORIAS Sub-X =================
+    # --------- CATEGORIAS ----------
     categorias = sorted(
         {j[5] for j in jogadores if j[5]},
         key=lambda x: int(x.replace("Sub-", ""))
     )
 
-    # ================= ESCALÕES FPF (SEMPRE DA BD) =================
+    # --------- ESCALÕES FPF (SEMPRE DA BD) ----------
     conn = get_db()
     c = conn.cursor()
-
     c.execute("""
         SELECT DISTINCT escalao
         FROM jogadores
-        WHERE escalao IS NOT NULL
-          AND escalao != ''
+        WHERE escalao IS NOT NULL AND escalao != ''
     """)
-
     escalaoes_fpf = sorted(
         [r[0] for r in c.fetchall()],
         key=ordem_escaloes_fpf
     )
 
-    # ================= DISTRITOS / NATURALIDADE =================
-    c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL ORDER BY distrito")
-    distritos = [r[0] for r in c.fetchall()]
+    # --------- OUTROS FILTROS ----------
+    c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
+    distritos = sorted(r[0] for r in c.fetchall())
 
-    c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL ORDER BY naturalidade")
-    naturalidades = [r[0] for r in c.fetchall()]
+    c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL")
+    naturalidades = sorted(r[0] for r in c.fetchall())
 
     conn.close()
 
@@ -231,21 +224,21 @@ def index():
         "index.html",
         jogadores=jogadores,
         total=len(jogadores),
-        distritos=distritos,
-        naturalidades=naturalidades,
         categorias=categorias,
         escalaoes_fpf=escalaoes_fpf,
+        distritos=distritos,
+        naturalidades=naturalidades,
         filtros=f
     )
 
 # ======================================================
-# EXPORTAÇÃO
+# EXPORTAR
 # ======================================================
 
 @app.route("/exportar")
 def exportar():
     if not session.get("autenticado"):
-        return redirect(url_for("login"))
+        return redirect("/login")
 
     q = request.args.to_dict(flat=False)
 
@@ -258,7 +251,7 @@ def exportar():
         "distrito": q.get("distrito", []),
         "naturalidade": q.get("naturalidade", []),
         "sort": q.get("sort", ["player_id"])[0],
-        "dir": q.get("dir", ["ASC"])[0],
+        "dir": q.get("dir", ["DESC"])[0],
     })
 
     output = StringIO()
@@ -266,8 +259,8 @@ def exportar():
 
     writer.writerow([
         "ID","Nome","Nascimento","Clube",
-        "Escalão","Categoria",
-        "Distrito","Naturalidade","FPF"
+        "Escalão","Categoria","Distrito",
+        "Naturalidade","FPF"
     ])
 
     for j in jogadores:
@@ -284,9 +277,9 @@ def exportar():
     )
 
 # ======================================================
-# ARRANQUE
+# RUN
 # ======================================================
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
