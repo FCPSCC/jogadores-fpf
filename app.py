@@ -6,6 +6,7 @@ import sqlite3
 import os
 import csv
 from io import StringIO
+from datetime import date
 
 # ======================================================
 # APP
@@ -26,23 +27,46 @@ SITE_PASSWORD = os.environ.get(
 DB_PATH = "jogadores_fpf.db"
 
 # ======================================================
-# DB
+# BASE DE DADOS
 # ======================================================
 
 def get_db():
     return sqlite3.connect(DB_PATH, timeout=10)
 
 # ======================================================
-# CATEGORIA (Sub-X)
+# ÉPOCA ATUAL (AUTOMÁTICA)
 # ======================================================
 
-def calcular_categoria_por_ano(ano):
-    if not ano:
+def obter_ano_referencia_epoca():
+    """
+    Devolve o ano base da época desportiva atual.
+    Ex:
+      2025/26 -> 2025
+    """
+    hoje = date.today()
+    if hoje.month >= 7:
+        return hoje.year
+    return hoje.year - 1
+
+# ======================================================
+# CATEGORIA (Sub-X / Sénior) – REGRA FINAL
+# ======================================================
+
+def calcular_categoria_por_ano(ano_nascimento):
+    if not ano_nascimento:
         return None
-    return f"Sub-{2026 - ano}"
+
+    ano_epoca = obter_ano_referencia_epoca()
+    idade = ano_epoca - ano_nascimento
+
+    if idade < 5:
+        return "Sub-5"
+    if 5 <= idade <= 19:
+        return f"Sub-{idade}"
+    return "Sénior"
 
 # ======================================================
-# ORDEM ESCALÃO FPF (robusta)
+# ORDEM DO ESCALÃO FPF (robusta a variações)
 # ======================================================
 
 def ordem_escaloes_fpf(txt):
@@ -79,14 +103,14 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL (SEGURA)
+# QUERY PRINCIPAL
 # ======================================================
 
 def obter_jogadores(f):
     conn = get_db()
     c = conn.cursor()
 
-    base_query = """
+    query = """
         SELECT
             player_id,
             nome,
@@ -102,37 +126,36 @@ def obter_jogadores(f):
     params = []
 
     if f["nome"]:
-        base_query += " AND nome LIKE ?"
+        query += " AND nome LIKE ?"
         params.append(f"%{f['nome']}%")
 
     if f["clube"]:
-        base_query += " AND clube LIKE ?"
+        query += " AND clube LIKE ?"
         params.append(f"%{f['clube']}%")
 
     if f["ano_nasc"].isdigit():
-        base_query += " AND ano_nascimento = ?"
+        query += " AND ano_nascimento = ?"
         params.append(int(f["ano_nasc"]))
 
     if f["distrito"]:
-        base_query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
+        query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
         params.extend(f["distrito"])
 
     if f["naturalidade"]:
-        base_query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
+        query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
 
-    # ---------- PROTEÇÃO DE ORDER BY ----------
     COLUNAS_OK = {
         "player_id", "nome", "data_nascimento",
-        "ano_nascimento", "clube", "distrito",
-        "naturalidade", "escalao"
+        "ano_nascimento", "clube",
+        "distrito", "naturalidade", "escalao"
     }
+
     ordem = "player_id DESC"
     if f["sort"] in COLUNAS_OK:
         direcao = "ASC" if f["dir"].upper() == "ASC" else "DESC"
         ordem = f"{f['sort']} {direcao}"
 
-    # ---------- LIMIT SE NÃO HOUVER FILTROS ----------
     sem_filtros = not any([
         f["nome"], f["clube"], f["ano_nasc"],
         f["categoria"], f["escalao_fpf"],
@@ -140,11 +163,11 @@ def obter_jogadores(f):
     ])
 
     if sem_filtros:
-        base_query += f" ORDER BY {ordem} LIMIT 30"
+        query += f" ORDER BY {ordem} LIMIT 30"
     else:
-        base_query += f" ORDER BY {ordem}"
+        query += f" ORDER BY {ordem}"
 
-    c.execute(base_query, params)
+    c.execute(query, params)
     rows = c.fetchall()
     conn.close()
 
@@ -152,12 +175,10 @@ def obter_jogadores(f):
     for r in rows:
         categoria = calcular_categoria_por_ano(r[3])
 
-        # Filtro Categoria
         if f["categoria"]:
             if not categoria or categoria not in f["categoria"]:
                 continue
 
-        # Filtro Escalão FPF
         if f["escalao_fpf"]:
             if not r[7] or r[7] not in f["escalao_fpf"]:
                 continue
@@ -192,26 +213,30 @@ def index():
 
     jogadores = obter_jogadores(f)
 
-    # --------- CATEGORIAS ----------
+    def ordem_categoria(c):
+        if c == "Sénior":
+            return 99
+        return int(c.replace("Sub-", ""))
+
     categorias = sorted(
         {j[5] for j in jogadores if j[5]},
-        key=lambda x: int(x.replace("Sub-", ""))
+        key=ordem_categoria
     )
 
-    # --------- ESCALÕES FPF (SEMPRE DA BD) ----------
     conn = get_db()
     c = conn.cursor()
+
     c.execute("""
         SELECT DISTINCT escalao
         FROM jogadores
         WHERE escalao IS NOT NULL AND escalao != ''
     """)
+
     escalaoes_fpf = sorted(
         [r[0] for r in c.fetchall()],
         key=ordem_escaloes_fpf
     )
 
-    # --------- OUTROS FILTROS ----------
     c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
     distritos = sorted(r[0] for r in c.fetchall())
 
@@ -259,8 +284,8 @@ def exportar():
 
     writer.writerow([
         "ID","Nome","Nascimento","Clube",
-        "Escalão","Categoria","Distrito",
-        "Naturalidade","FPF"
+        "Escalão","Categoria",
+        "Distrito","Naturalidade","FPF"
     ])
 
     for j in jogadores:
