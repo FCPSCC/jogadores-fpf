@@ -99,7 +99,7 @@ def carregar_mapa_clubes():
         distrito = row[2]
         if clube and distrito:
             mapa[normalizar_clube(clube)] = distrito.strip()
-    print(f"✅ Clubes carregados: {len(mapa)}")
+    print(f"Clubes carregados: {len(mapa)}")
     return mapa
 
 # ======================================================
@@ -246,13 +246,13 @@ def main():
             inserir_jogador(conn, dados, mapa_clubes)
             atualizar_ultimo_id(conn, pid)
             falhas = 0
-            print(f"✅ {pid} — {dados['nome']}")
+            print(f"ID {pid} — {dados['nome']}")
         else:
             falhas += 1
-            print(f"❌ {pid} inexistente / erro ({falhas})")
+            print(f"ERRO {pid} inexistente / erro ({falhas})")
 
         if falhas >= MAX_FALHAS_SEGUIDAS:
-            print("🛑 Limite de falhas consecutivas atingido")
+            print("Limite de falhas consecutivas atingido")
             break
 
         time.sleep(random.uniform(0.8, 1.4))
@@ -261,7 +261,7 @@ def main():
     conn.commit()
     conn.close()
 
-    print("✅ Execução terminada com sucesso.")
+    print("Execução terminada com sucesso.")
 
     git_push_bd()
 
