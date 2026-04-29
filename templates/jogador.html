@@ -1,4 +1,11 @@
-<!DOCTYPE html>
+<!DOCTYPE html>>FPF + ZeroZero</div>
+    </div>
+
+</div>
+
+</body>
+</html>
+``
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -8,11 +15,12 @@
 :root {
     --bg: #f4f6f8;
     --card: #ffffff;
-    --primary: #1f3c88;
+    --porto-blue: #003087;
     --secondary: #6c757d;
     --border: #e0e0e0;
 }
 
+/* fundo geral */
 body {
     font-family: "Segoe UI", Arial, sans-serif;
     margin: 0;
@@ -27,7 +35,8 @@ body {
 }
 
 a {
-    color: var(--primary);
+    color: var(--porto-blue);
+    font-weight: 600;
     text-decoration: none;
 }
 
@@ -41,15 +50,27 @@ a:hover {
     font-weight: 600;
 }
 
-/* cabeçalho do jogador */
+/* cabeçalho */
 .player-header {
     background: var(--card);
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     display: grid;
     grid-template-columns: 120px 1fr;
     gap: 20px;
+}
+
+/* fundo FC Porto */
+.player-header.porto {
+    background: linear-gradient(135deg, var(--porto-blue), #001b4d);
+    color: #fff;
+}
+
+.player-header.porto .label,
+.player-header.porto .value,
+.player-header.porto .player-name {
+    color: #fff;
 }
 
 /* foto */
@@ -59,9 +80,6 @@ a:hover {
     border-radius: 8px;
     overflow: hidden;
     background: #e5e5e5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .photo img {
@@ -70,13 +88,14 @@ a:hover {
     object-fit: cover;
 }
 
-/* info principal */
+/* nome */
 .player-name {
     font-size: 28px;
     font-weight: 800;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
+/* meta */
 .player-meta {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -96,16 +115,16 @@ a:hover {
 
 /* secções */
 .section {
-    margin-top: 25px;
+    margin-top: 30px;
 }
 
 .section-title {
     font-size: 18px;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
-/* estatísticas */
+/* stats */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -116,28 +135,28 @@ a:hover {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 15px;
+    padding: 18px;
     text-align: center;
 }
 
 .stat-value {
-    font-size: 34px;
+    font-size: 36px;
     font-weight: 800;
-    color: var(--primary);
+    color: var(--porto-blue);
 }
 
 .stat-label {
     font-size: 13px;
     color: var(--secondary);
-    margin-top: 3px;
+    margin-top: 4px;
 }
 
-/* info adicional */
+/* info */
 .info-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 15px;
+    padding: 16px;
 }
 
 /* footer */
@@ -159,12 +178,12 @@ a:hover {
         ← Voltar à lista</a>
     </div>
 
-    <!-- CABEÇALHO -->
-    <div class="player-header">
+    <!-- HEADER DO JOGADOR -->
+    <div class="player-header {% if jogador[3] and 'porto' in jogador[3]|lower %}porto{% endif %}">
 
         <div class="photo">
             {% if zz and zz[5] %}
-                src="https://cdn-img.staticzz.com/img/jogadores/{{ zz[5].split('/')[-1] }}.jpg"
+                https://cdn-img.staticzz.com/img/jogadores/{{ zz[5].split('/')[-1] }}.jpg"
                      alt="Foto do jogador"
                      onerror="this.src='/static/sem_foto.png';">
             {% else %}
@@ -223,7 +242,7 @@ a:hover {
                 <p><span class="label">Última atualização:</span> {{ zz[4] }}</p>
                 <p>
                     {% if zz[5] %}
-                        Ver no ZeroZero</a> |
+                        https://www.zerozero.pt{{ zz[5] }}Ver no ZeroZero</a> |
                     {% endif %}
                     https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}Ver na FPF</a>
                 </p>
@@ -238,10 +257,3 @@ a:hover {
 
     <div class="footer">
         <div>ID interno: {{ jogador[0] }}</div>
-        <div>FPF + ZeroZero</div>
-    </div>
-
-</div>
-
-</body>
-</html>
