@@ -29,10 +29,11 @@ DB_PATH = "jogadores_fpf.db"
 # ======================================================
 
 def get_db():
+    # timeout evita "database is locked"
     return sqlite3.connect(DB_PATH, timeout=10)
 
 # ======================================================
-# CATEGORIA (Sub-X a partir do ano)
+# CATEGORIA (Sub-X)
 # ======================================================
 
 def calcular_categoria_por_ano(ano_nascimento):
@@ -114,8 +115,8 @@ def obter_jogadores(f):
 
     COLUNAS_PERMITIDAS = [
         "player_id", "nome", "data_nascimento",
-        "ano_nascimento", "clube", "distrito",
-        "naturalidade", "escalao"
+        "ano_nascimento", "clube",
+        "distrito", "naturalidade", "escalao"
     ]
 
     if filtros_ativos and f["sort"] in COLUNAS_PERMITIDAS:
@@ -132,9 +133,11 @@ def obter_jogadores(f):
     for r in rows:
         categoria = calcular_categoria_por_ano(r[3])
 
-        # FILTRO Categoria (exclui quem não tem categoria)
+        # FILTRO Categoria (Sub-X)
         if f["categoria"]:
-            if not categoria or categoria not in f["categoria"]:
+            if not categoria:
+                continue
+            if categoria not in f["categoria"]:
                 continue
 
         # FILTRO Escalão FPF
@@ -142,14 +145,14 @@ def obter_jogadores(f):
             continue
 
         jogadores.append((
-            r[0],        # ID
-            r[1],        # Nome
-            r[2],        # Nascimento
-            r[4],        # Clube
-            r[7],        # Escalão FPF
-            categoria,   # Categoria Sub-X
-            r[5],        # Distrito
-            r[6]         # Naturalidade
+            r[0],      # ID
+            r[1],      # Nome
+            r[2],      # Nascimento
+            r[4],      # Clube
+            r[7],      # Escalão FPF
+            categoria, # Categoria Sub-X
+            r[5],      # Distrito
+            r[6]       # Naturalidade
         ))
 
     return jogadores
@@ -177,13 +180,24 @@ def index():
 
     jogadores = obter_jogadores(f)
 
-    # Categorias ordenadas por idade
+    # ================= Categorias (Sub-X) ordenadas =================
     categorias = sorted(
         {j[5] for j in jogadores if j[5]},
         key=lambda x: int(x.replace("Sub-", ""))
     )
 
-    # Escalões FPF por ordem etária
+    # ================= Escalões FPF (SEMPRE DA BD) =================
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT DISTINCT escalao
+        FROM jogadores
+        WHERE escalao IS NOT NULL
+          AND escalao != ''
+    """)
+    escalaoes_fpf_bd = {r[0] for r in c.fetchall()}
+
     ORDEM_ESCALOES_FPF = [
         "Junior-G (Petiz)",
         "Junior-F (Traquina)",
@@ -197,15 +211,16 @@ def index():
 
     escalaoes_fpf = [
         e for e in ORDEM_ESCALOES_FPF
-        if any(j[4] == e for j in jogadores)
+        if e in escalaoes_fpf_bd
     ]
 
-    conn = get_db()
-    c = conn.cursor()
+    # ================= Distritos e Naturalidade =================
     c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL ORDER BY distrito")
     distritos = [r[0] for r in c.fetchall()]
+
     c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL ORDER BY naturalidade")
     naturalidades = [r[0] for r in c.fetchall()]
+
     conn.close()
 
     return render_template(
@@ -246,13 +261,14 @@ def exportar():
     writer = csv.writer(output, delimiter=";")
 
     writer.writerow([
-        "ID","Nome","Nascimento","Clube",
-        "Escalão","Categoria","Distrito","Naturalidade","FPF"
+        "ID", "Nome", "Nascimento", "Clube",
+        "Escalão", "Categoria", "Distrito",
+        "Naturalidade", "FPF"
     ])
 
     for j in jogadores:
         writer.writerow([
-            j[0],j[1],j[2],j[3],j[4],j[5],j[6],j[7],
+            j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7],
             f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
         ])
 
