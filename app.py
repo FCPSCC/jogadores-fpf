@@ -3,7 +3,7 @@ from flask import (
     session, url_for, Response
 )
 from io import StringIO
-# >>> PATCH: importar datetime
+# >>> PATCH: importar datetime para conversão de datas
 from datetime import date, datetime
 # <<< PATCH
 import os
@@ -186,22 +186,10 @@ def obter_jogadores(f, sort_col, sort_dir):
         WHERE 1=1
     """
     params = []
-    tem_filtros = False
 
     if f.get("nome"):
         query += " AND j.nome ILIKE %s"
         params.append(f"%{f['nome']}%")
-        tem_filtros = True
-
-    if f.get("clube"):
-        query += " AND j.clube ILIKE %s"
-        params.append(f"%{f['clube']}%")
-        tem_filtros = True
-
-    if f.get("ano_nasc", "").isdigit():
-        query += " AND j.ano_nascimento = %s"
-        params.append(int(f["ano_nasc"]))
-        tem_filtros = True
 
     coluna = sort_col if sort_col in [
         "player_id", "nome", "data_nascimento", "clube",
@@ -209,10 +197,7 @@ def obter_jogadores(f, sort_col, sort_dir):
     ] else "player_id"
 
     direcao = "ASC" if sort_dir == "asc" else "DESC"
-
     query += f" ORDER BY j.{coluna} {direcao}"
-    if not tem_filtros:
-        query += " LIMIT 100"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -256,7 +241,7 @@ def index():
     )
 
 # ======================================================
-# ADMIN IMPORT JOGADORES
+# ADMIN IMPORT JOGADORES (PATCH APLICADO)
 # ======================================================
 
 @app.route("/admin/import-jogadores")
@@ -273,15 +258,21 @@ def admin_import_jogadores():
         reader = csv.DictReader(f)
         for row in reader:
 
-            # >>> PATCH: conversão segura da data DD-MM-YYYY → date
+            # >>> PATCH: data_nascimento segura
             data_nasc = None
-            if row["data_nascimento"]:
+            if row.get("data_nascimento"):
                 try:
                     data_nasc = datetime.strptime(
                         row["data_nascimento"], "%d-%m-%Y"
                     ).date()
                 except ValueError:
                     data_nasc = None
+            # <<< PATCH
+
+            # >>> PATCH: ano_nascimento seguro
+            ano_nasc = None
+            if row.get("ano_nascimento") and row["ano_nascimento"].isdigit():
+                ano_nasc = int(row["ano_nascimento"])
             # <<< PATCH
 
             cur.execute("""
@@ -293,8 +284,8 @@ def admin_import_jogadores():
             """, (
                 int(row["player_id"]),
                 row["nome"],
-                data_nasc,              # <<< PATCH aplicado aqui
-                int(row["ano_nascimento"]),
+                data_nasc,
+                ano_nasc,
                 row["clube"],
                 row["escalao"],
                 row["distrito"],
