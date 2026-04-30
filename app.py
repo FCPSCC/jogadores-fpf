@@ -367,33 +367,39 @@ def admin_import():
 
     ficheiro = "participacao_epoca_atual.csv"
 
-    if not os.path.exists(ficheiro):
-        return f"ERRO: ficheiro {ficheiro} não encontrado no servidor", 500
+    try:
+        if not os.path.exists(ficheiro):
+            return f"ERRO: ficheiro '{ficheiro}' não encontrado", 500
 
-    conn = get_db()
-    c = conn.cursor()
+        conn = get_db()
+        c = conn.cursor()
 
-    with open(ficheiro, newline="", encoding="utf-8") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            c.execute("""
-                INSERT INTO participacao_epoca_atual
-                (player_id, modalidade, clube, escalao, escalao_texto, jogos, golos)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                int(row["player_id"]),
-                row["modalidade"],
-                row["clube"],
-                int(row["escalao"]),
-                row["escalao_texto"],
-                int(row["jogos"]),
-                int(row["golos"])
-            ))
+        with open(ficheiro, newline="", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            linhas = 0
+            for row in reader:
+                linhas += 1
+                c.execute("""
+                    INSERT INTO participacao_epoca_atual
+                    (player_id, modalidade, clube, escalao, escalao_texto, jogos, golos)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    int(row["player_id"]),
+                    row["modalidade"],
+                    row["clube"],
+                    int(row["escalao"]),
+                    row["escalao_texto"],
+                    int(row["jogos"]),
+                    int(row["golos"])
+                ))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
 
-    return "Importação concluída com sucesso ✅"
+        return f"Importação concluída ✅ ({linhas} linhas inseridas)"
+
+    except Exception as e:
+        return f"ERRO NA IMPORTAÇÃO: {type(e).__name__}: {e}", 500
 
 # ======================================================
 # RUN
