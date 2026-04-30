@@ -274,6 +274,7 @@ def ficha_jogador(player_id):
             epoca,
             ultima_atualizacao,
             zz_player_url
+            foto_url
         FROM estatisticas_zerozero
         WHERE player_id = ?
     """, (player_id,))
