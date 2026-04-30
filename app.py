@@ -14,7 +14,6 @@ import psycopg2.extras
 # APP
 # ======================================================
 
-
 app = Flask(__name__)
 
 app.secret_key = os.environ.get(
@@ -27,11 +26,9 @@ SITE_PASSWORD = os.environ.get(
     "MUDAR123"
 )
 
-
 # ======================================================
 # BASE DE DADOS
 # ======================================================
-
 
 def get_db():
     return psycopg2.connect(
@@ -57,6 +54,7 @@ def garantir_tabela_participacao():
     """)
 
     conn.commit()
+    cur.close()
     conn.close()
 
 # ======================================================
@@ -146,38 +144,37 @@ def obter_jogadores(f, sort_col, sort_dir):
     tem_filtros = False
 
     if f["nome"]:
-        query += " AND j.nome LIKE ?"
+        query += " AND j.nome ILIKE %s"
         params.append(f"%{f['nome']}%")
         tem_filtros = True
 
     if f["clube"]:
-        query += " AND j.clube LIKE ?"
+        query += " AND j.clube ILIKE %s"
         params.append(f"%{f['clube']}%")
         tem_filtros = True
 
     if f["ano_nasc"].isdigit():
-        query += " AND j.ano_nascimento = ?"
+        query += " AND j.ano_nascimento = %s"
         params.append(int(f["ano_nasc"]))
         tem_filtros = True
 
     if f["distrito"]:
-        query += f" AND j.distrito IN ({','.join(['?'] * len(f['distrito']))})"
-        params.extend(f["distrito"])
+        query += " AND j.distrito = ANY(%s)"
+        params.append(f["distrito"])
         tem_filtros = True
 
     if f["naturalidade"]:
-        query += f" AND j.naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
-        params.extend(f["naturalidade"])
+        query += " AND j.naturalidade = ANY(%s)"
+        params.append(f["naturalidade"])
         tem_filtros = True
 
-    # PASSO 3
     if f.get("joga_acima"):
         query += """
             AND EXISTS (
                 SELECT 1
                 FROM participacao_epoca_atual p
                 WHERE p.player_id = j.player_id
-                  AND p.escalao > (? - j.ano_nascimento + 1)
+                  AND p.escalao > (%s - j.ano_nascimento + 1)
             )
         """
         params.append(obter_ano_referencia_epoca())
@@ -196,12 +193,18 @@ def obter_jogadores(f, sort_col, sort_dir):
 
     c.execute(query, params)
     rows = c.fetchall()
+
+    c.close()
     conn.close()
 
     jogadores = []
     for r in rows:
-        categoria = calcular_categoria_por_ano(r[5])
-        jogadores.append((r[0], r[1], r[2], r[3], r[4], categoria, r[6], r[7]))
+        categoria = calcular_categoria_por_ano(r["ano_nascimento"])
+        jogadores.append((
+            r["player_id"], r["nome"], r["data_nascimento"],
+            r["clube"], r["escalao"], categoria,
+            r["distrito"], r["naturalidade"]
+        ))
 
     return jogadores
 
@@ -236,14 +239,15 @@ def index():
     c = conn.cursor()
 
     c.execute("SELECT DISTINCT escalao FROM jogadores WHERE escalao IS NOT NULL AND escalao != ''")
-    escalaoes_fpf = sorted([r[0] for r in c.fetchall()], key=ordem_escaloes_fpf)
+    escalaoes_fpf = sorted([r["escalao"] for r in c.fetchall()], key=lambda x: ordem_escaloes_fpf(x))
 
     c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
-    distritos = sorted(r[0] for r in c.fetchall())
+    distritos = sorted(r["distrito"] for r in c.fetchall())
 
     c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL")
-    naturalidades = sorted(r[0] for r in c.fetchall())
+    naturalidades = sorted(r["naturalidade"] for r in c.fetchall())
 
+    c.close()
     conn.close()
 
     categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
@@ -268,19 +272,19 @@ def ficha_jogador(player_id):
     if not session.get("autenticado"):
         return redirect("/login")
 
-    conn = sqlite3.connect(DB_PATH, timeout=10)
-    conn.row_factory = sqlite3.Row
+    conn = get_db()
     c = conn.cursor()
 
     c.execute("""
         SELECT player_id, nome, data_nascimento, ano_nascimento,
                clube, naturalidade, escalao
         FROM jogadores
-        WHERE player_id = ?
+        WHERE player_id = %s
     """, (player_id,))
     jogador = c.fetchone()
 
     if not jogador:
+        c.close()
         conn.close()
         return "Jogador não encontrado", 404
 
@@ -288,24 +292,23 @@ def ficha_jogador(player_id):
         SELECT jogos, golos, competicao, epoca,
                ultima_atualizacao, zz_player_url, foto_url
         FROM estatisticas_zerozero
-        WHERE player_id = ?
+        WHERE player_id = %s
     """, (player_id,))
     zz = c.fetchone()
 
-    try:
-        c.execute("""
-            SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
-            FROM participacao_epoca_atual
-            WHERE player_id = ?
-            ORDER BY escalao DESC
-        """, (player_id,))
-        participacao = c.fetchall()
-    except sqlite3.OperationalError:
-        participacao = []
+    c.execute("""
+        SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
+        FROM participacao_epoca_atual
+        WHERE player_id = %s
+        ORDER BY escalao DESC
+    """, (player_id,))
+    participacao = c.fetchall()
+
+    c.close()
+    conn.close()
 
     cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = extrair_numero_escalao(cat_teorica)
-
     escalao_real_max = max((p["escalao"] for p in participacao), default=None)
 
     joga_acima = (
@@ -313,8 +316,6 @@ def ficha_jogador(player_id):
         and escalao_real_max is not None
         and escalao_real_max > escalao_teorico
     )
-
-    conn.close()
 
     return render_template(
         "jogador.html",
@@ -335,18 +336,7 @@ def exportar():
     if not session.get("autenticado"):
         return redirect("/login")
 
-    f = {
-        "nome": request.args.get("nome", ""),
-        "clube": request.args.get("clube", ""),
-        "ano_nasc": request.args.get("ano_nasc", ""),
-        "categoria": request.args.getlist("categoria"),
-        "escalao_fpf": request.args.getlist("escalao_fpf"),
-        "distrito": request.args.getlist("distrito"),
-        "naturalidade": request.args.getlist("naturalidade"),
-        "joga_acima": request.args.get("joga_acima") == "1"
-    }
-
-    jogadores = obter_jogadores(f, "player_id", "desc")
+    jogadores = obter_jogadores({}, "player_id", "desc")
 
     output = StringIO()
     writer = csv.writer(output, delimiter=";")
@@ -369,17 +359,19 @@ def exportar():
         headers={"Content-Disposition": "attachment; filename=jogadores.csv"}
     )
 
+# ======================================================
+# ADMIN IMPORT
+# ======================================================
+
 @app.route("/admin/import")
 def admin_import():
     if request.args.get("key") != os.environ.get("SITE_PASSWORD", "MUDAR123"):
         return "Acesso negado", 403
 
     try:
-        # ✅ GARANTIR TABELA ANTES DE TUDO
         garantir_tabela_participacao()
 
         ficheiro = "participacao_epoca_atual.csv"
-
         if not os.path.exists(ficheiro):
             return f"ERRO: ficheiro '{ficheiro}' não encontrado", 500
 
@@ -390,11 +382,10 @@ def admin_import():
             reader = csv.DictReader(csvfile)
             linhas = 0
             for row in reader:
-                linhas += 1
                 c.execute("""
                     INSERT INTO participacao_epoca_atual
                     (player_id, modalidade, clube, escalao, escalao_texto, jogos, golos)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """, (
                     int(row["player_id"]),
                     row["modalidade"],
@@ -404,8 +395,10 @@ def admin_import():
                     int(row["jogos"]),
                     int(row["golos"])
                 ))
+                linhas += 1
 
         conn.commit()
+        c.close()
         conn.close()
 
         return f"Importação concluída ✅ ({linhas} linhas inseridas)"
