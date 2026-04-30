@@ -9,7 +9,6 @@ body { font-family: monospace; background:#f4f4f4; }
 .container { max-width:1200px; margin:auto; padding:20px; }
 .section { background:#fff; border:1px solid #ccc; margin-bottom:20px; padding:15px; }
 .section h2 { margin-top:0; background:#eee; padding:8px; }
-pre { background:#111; color:#0f0; padding:12px; overflow-x:auto; }
 table { border-collapse:collapse; width:100%; }
 th,td { border:1px solid #bbb; padding:6px; }
 th { background:#eaeaea; }
@@ -21,16 +20,13 @@ th { background:#eaeaea; }
 
 <div class="section">
 <h2>DEBUG · jogador</h2>
-<pre>{{ jogador | dict | tojson(indent=2, ensure_ascii=False) }}</pre>
-</div>
-
-<div class="section">
-<h2>DEBUG · zz</h2>
-{% if zz %}
-<pre>{{ zz | dict | tojson(indent=2, ensure_ascii=False) }}</pre>
-{% else %}
-<p>zz = None</p>
-{% endif %}
+<p>player_id: {{ jogador["player_id"] }}</p>
+<p>nome: {{ jogador["nome"] }}</p>
+<p>data_nascimento: {{ jogador["data_nascimento"] }}</p>
+<p>ano_nascimento: {{ jogador["ano_nascimento"] }}</p>
+<p>clube: {{ jogador["clube"] }}</p>
+<p>escalao FPF: {{ jogador["escalao"] }}</p>
+<p>naturalidade: {{ jogador["naturalidade"] }}</p>
 </div>
 
 <div class="section">
@@ -41,24 +37,30 @@ th { background:#eaeaea; }
 </div>
 
 <div class="section">
-<h2>DEBUG · participacao (raw)</h2>
-{% if participacao %}
-<pre>
-{% for p in participacao %}
-{{ p | dict | tojson(indent=2, ensure_ascii=False) }}
-{% endfor %}
-</pre>
+<h2>DEBUG · zz (ZeroZero)</h2>
+{% if zz %}
+<p>jogos: {{ zz["jogos"] }}</p>
+<p>golos: {{ zz["golos"] }}</p>
+<p>competicao: {{ zz["competicao"] }}</p>
+<p>epoca: {{ zz["epoca"] }}</p>
 {% else %}
-<p>participacao = []</p>
+<p>zz = None</p>
 {% endif %}
 </div>
 
 <div class="section">
-<h2>DEBUG · participacao (tabela)</h2>
+<h2>DEBUG · participacao</h2>
+
 {% if participacao %}
 <table>
 <tr>
-<th>#</th><th>modalidade</th><th>clube</th><th>escalao</th><th>jogos</th><th>golos</th>
+<th>#</th>
+<th>modalidade</th>
+<th>clube</th>
+<th>escalao</th>
+<th>escalao_texto</th>
+<th>jogos</th>
+<th>golos</th>
 </tr>
 {% for p in participacao %}
 <tr>
@@ -66,13 +68,14 @@ th { background:#eaeaea; }
 <td>{{ p["modalidade"] }}</td>
 <td>{{ p["clube"] }}</td>
 <td>{{ p["escalao"] }}</td>
+<td>{{ p["escalao_texto"] }}</td>
 <td>{{ p["jogos"] }}</td>
 <td>{{ p["golos"] }}</td>
 </tr>
 {% endfor %}
 </table>
 {% else %}
-<p>Sem linhas</p>
+<p>participacao = lista vazia</p>
 {% endif %}
 </div>
 
