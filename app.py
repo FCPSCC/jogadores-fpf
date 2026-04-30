@@ -1,12 +1,18 @@
 from flask import (
-    Flask, render_template.secret_key = os.environ.get(    Flask, render_template, request, redirect,
+    Flask, render_template, request, redirect,
+    session, url_for, Response
+)
+from io import StringIO
+from datetime import date
+import sqlite3
+import os
+import csv
+
+app = Flask(__name__)
+
+app.secret_key = os.environ.get(
     "SECRET_KEY",
     "chave-temporaria-123"
-)
-
-SITE_PASSWORD = os.environ.get(
-    "SITE_PASSWORD",
-    "MUDAR123"
 )
 
 DB_PATH = "jogadores_fpf.db"
