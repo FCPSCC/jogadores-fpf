@@ -360,6 +360,39 @@ def exportar():
         headers={"Content-Disposition": "attachment; filename=jogadores.csv"}
     )
 
+@app.route("/admin/import")
+def admin_import():
+    # 🔐 segurança mínima: só tu sabes esta password
+    if request.args.get("key") != os.environ.get("SITE_PASSWORD", "MUDAR123"):
+        return "Acesso negado", 403
+
+    conn = get_db()
+    c = conn.cursor()
+
+    ficheiro = "participacao_epoca_atual.csv"
+
+    with open(ficheiro, newline="", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            c.execute("""
+                INSERT INTO participacao_epoca_atual
+                (player_id, modalidade, clube, escalao, escalao_texto, jogos, golos)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                int(row["player_id"]),
+                row["modalidade"],
+                row["clube"],
+                int(row["escalao"]),
+                row["escalao_texto"],
+                int(row["jogos"]),
+                int(row["golos"])
+            ))
+
+    conn.commit()
+    conn.close()
+
+    return "Importação concluída com sucesso ✅"
+
 # ======================================================
 # RUN
 # ======================================================
