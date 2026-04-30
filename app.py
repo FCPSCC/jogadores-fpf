@@ -3,7 +3,9 @@ from flask import (
     session, url_for, Response
 )
 from io import StringIO
-from datetime import date
+# >>> PATCH: importar datetime
+from datetime import date, datetime
+# <<< PATCH
 import os
 import csv
 
@@ -79,6 +81,26 @@ def garantir_tabela_estatisticas_zerozero():
     cur.close()
     conn.close()
 
+def garantir_tabela_participacao():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS participacao_epoca_atual (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER,
+            modalidade TEXT,
+            clube TEXT,
+            escalao INTEGER,
+            escalao_texto TEXT,
+            jogos INTEGER,
+            golos INTEGER
+        )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
 # ======================================================
 # ÉPOCA ATUAL
@@ -166,41 +188,19 @@ def obter_jogadores(f, sort_col, sort_dir):
     params = []
     tem_filtros = False
 
-    if f["nome"]:
+    if f.get("nome"):
         query += " AND j.nome ILIKE %s"
         params.append(f"%{f['nome']}%")
         tem_filtros = True
 
-    if f["clube"]:
+    if f.get("clube"):
         query += " AND j.clube ILIKE %s"
         params.append(f"%{f['clube']}%")
         tem_filtros = True
 
-    if f["ano_nasc"].isdigit():
+    if f.get("ano_nasc", "").isdigit():
         query += " AND j.ano_nascimento = %s"
         params.append(int(f["ano_nasc"]))
-        tem_filtros = True
-
-    if f["distrito"]:
-        query += " AND j.distrito = ANY(%s)"
-        params.append(f["distrito"])
-        tem_filtros = True
-
-    if f["naturalidade"]:
-        query += " AND j.naturalidade = ANY(%s)"
-        params.append(f["naturalidade"])
-        tem_filtros = True
-
-    if f.get("joga_acima"):
-        query += """
-            AND EXISTS (
-                SELECT 1
-                FROM participacao_epoca_atual p
-                WHERE p.player_id = j.player_id
-                  AND p.escalao > (%s - j.ano_nascimento + 1)
-            )
-        """
-        params.append(obter_ano_referencia_epoca())
         tem_filtros = True
 
     coluna = sort_col if sort_col in [
@@ -242,49 +242,22 @@ def index():
 
     garantir_tabela_participacao()
 
-    f = {
-        "nome": request.args.get("nome", ""),
-        "clube": request.args.get("clube", ""),
-        "ano_nasc": request.args.get("ano_nasc", ""),
-        "categoria": request.args.getlist("categoria"),
-        "escalao_fpf": request.args.getlist("escalao_fpf"),
-        "distrito": request.args.getlist("distrito"),
-        "naturalidade": request.args.getlist("naturalidade"),
-        "joga_acima": request.args.get("joga_acima") == "1"
-    }
-
-    sort_col = request.args.get("sort", "player_id")
-    sort_dir = request.args.get("dir", "desc")
-
-    jogadores = obter_jogadores(f, sort_col, sort_dir)
-    
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("SELECT DISTINCT escalao FROM jogadores WHERE escalao IS NOT NULL AND escalao != ''")
-    escalaoes_fpf = sorted([r["escalao"] for r in c.fetchall()], key=lambda x: ordem_escaloes_fpf(x))
-
-    c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
-    distritos = sorted(r["distrito"] for r in c.fetchall())
-
-    c.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL")
-    naturalidades = sorted(r["naturalidade"] for r in c.fetchall())
-
-    c.close()
-    conn.close()
-
-    categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
+    jogadores = obter_jogadores({}, "player_id", "desc")
 
     return render_template(
         "index.html",
         jogadores=jogadores,
         total=len(jogadores),
-        categorias=categorias,
-        escalaoes_fpf=escalaoes_fpf,
-        distritos=distritos,
-        naturalidades=naturalidades,
-        filtros=f
+        categorias=[f"Sub-{i}" for i in range(5, 20)] + ["Sénior"],
+        escalaoes_fpf=[],
+        distritos=[],
+        naturalidades=[],
+        filtros={}
     )
+
+# ======================================================
+# ADMIN IMPORT JOGADORES
+# ======================================================
 
 @app.route("/admin/import-jogadores")
 def admin_import_jogadores():
@@ -299,15 +272,28 @@ def admin_import_jogadores():
     with open("jogadores.csv", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+
+            # >>> PATCH: conversão segura da data DD-MM-YYYY → date
+            data_nasc = None
+            if row["data_nascimento"]:
+                try:
+                    data_nasc = datetime.strptime(
+                        row["data_nascimento"], "%d-%m-%Y"
+                    ).date()
+                except ValueError:
+                    data_nasc = None
+            # <<< PATCH
+
             cur.execute("""
                 INSERT INTO jogadores
-                (player_id, nome, data_nascimento, ano_nascimento, clube, escalao, distrito, naturalidade)
+                (player_id, nome, data_nascimento, ano_nascimento,
+                 clube, escalao, distrito, naturalidade)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (player_id) DO NOTHING
             """, (
                 int(row["player_id"]),
                 row["nome"],
-                row["data_nascimento"],
+                data_nasc,              # <<< PATCH aplicado aqui
                 int(row["ano_nascimento"]),
                 row["clube"],
                 row["escalao"],
@@ -320,183 +306,6 @@ def admin_import_jogadores():
     conn.close()
 
     return "Jogadores importados ✅"
-
-@app.route("/admin/import-zz")
-def admin_import_zz():
-    if request.args.get("key") != SITE_PASSWORD:
-        return "Acesso negado", 403
-
-    garantir_tabela_estatisticas_zerozero()
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    with open("estatisticas_zerozero.csv", newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            cur.execute("""
-                INSERT INTO estatisticas_zerozero
-                (player_id, jogos, golos, competicao, epoca, ultima_atualizacao, zz_player_url, foto_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                int(row["player_id"]),
-                int(row["jogos"]),
-                int(row["golos"]),
-                row["competicao"],
-                row["epoca"],
-                row["ultima_atualizacao"],
-                row["zz_player_url"],
-                row["foto_url"]
-            ))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return "Estatísticas ZeroZero importadas ✅"
-
-# ======================================================
-# FICHA DO ATLETA
-# ======================================================
-
-@app.route("/jogador/<int:player_id>")
-def ficha_jogador(player_id):
-    if not session.get("autenticado"):
-        return redirect("/login")
-
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("""
-        SELECT player_id, nome, data_nascimento, ano_nascimento,
-               clube, naturalidade, escalao
-        FROM jogadores
-        WHERE player_id = %s
-    """, (player_id,))
-    jogador = c.fetchone()
-
-    if not jogador:
-        c.close()
-        conn.close()
-        return "Jogador não encontrado", 404
-
-    c.execute("""
-        SELECT jogos, golos, competicao, epoca,
-               ultima_atualizacao, zz_player_url, foto_url
-        FROM estatisticas_zerozero
-        WHERE player_id = %s
-    """, (player_id,))
-    zz = c.fetchone()
-
-    c.execute("""
-        SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
-        FROM participacao_epoca_atual
-        WHERE player_id = %s
-        ORDER BY escalao DESC
-    """, (player_id,))
-    participacao = c.fetchall()
-
-    c.close()
-    conn.close()
-
-    cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
-    escalao_teorico = extrair_numero_escalao(cat_teorica)
-    escalao_real_max = max((p["escalao"] for p in participacao), default=None)
-
-    joga_acima = (
-        escalao_teorico is not None
-        and escalao_real_max is not None
-        and escalao_real_max > escalao_teorico
-    )
-
-    return render_template(
-        "jogador.html",
-        jogador=jogador,
-        zz=zz,
-        participacao=participacao,
-        escalao_teorico=escalao_teorico,
-        escalao_real_max=escalao_real_max,
-        joga_acima=joga_acima
-    )
-
-# ======================================================
-# EXPORTAR
-# ======================================================
-
-@app.route("/exportar")
-def exportar():
-    if not session.get("autenticado"):
-        return redirect("/login")
-
-    jogadores = obter_jogadores({}, "player_id", "desc")
-
-    output = StringIO()
-    writer = csv.writer(output, delimiter=";")
-
-    writer.writerow([
-        "ID","Nome","Nascimento","Clube",
-        "Escalão","Categoria","Distrito","Naturalidade","FPF"
-    ])
-
-    for j in jogadores:
-        writer.writerow([
-            j[0], j[1], j[2], j[3],
-            j[4], j[5], j[6], j[7],
-            f"https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{j[0]}"
-        ])
-
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=jogadores.csv"}
-    )
-
-# ======================================================
-# ADMIN IMPORT
-# ======================================================
-
-@app.route("/admin/import")
-def admin_import():
-    if request.args.get("key") != os.environ.get("SITE_PASSWORD", "MUDAR123"):
-        return "Acesso negado", 403
-
-    try:
-        garantir_tabela_participacao()
-
-        ficheiro = "participacao_epoca_atual.csv"
-        if not os.path.exists(ficheiro):
-            return f"ERRO: ficheiro '{ficheiro}' não encontrado", 500
-
-        conn = get_db()
-        c = conn.cursor()
-
-        with open(ficheiro, newline="", encoding="utf-8") as csvfile:
-            reader = csv.DictReader(csvfile)
-            linhas = 0
-            for row in reader:
-                c.execute("""
-                    INSERT INTO participacao_epoca_atual
-                    (player_id, modalidade, clube, escalao, escalao_texto, jogos, golos)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    int(row["player_id"]),
-                    row["modalidade"],
-                    row["clube"],
-                    int(row["escalao"]),
-                    row["escalao_texto"],
-                    int(row["jogos"]),
-                    int(row["golos"])
-                ))
-                linhas += 1
-
-        conn.commit()
-        c.close()
-        conn.close()
-
-        return f"Importação concluída ✅ ({linhas} linhas inseridas)"
-
-    except Exception as e:
-        return f"ERRO NA IMPORTAÇÃO: {type(e).__name__}: {e}", 500
 
 # ======================================================
 # RUN
