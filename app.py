@@ -1,20 +1,5 @@
 from flask import (
-    Flask, render_template, request, redirect,
-    session, url_for, Response
-)
-import sqlite3
-import os
-import csv
-from io import StringIO
-from datetime import date
-
-# ======================================================
-# APP
-# ======================================================
-
-app = Flask(__name__)
-
-app.secret_key = os.environ.get(
+    Flask, render_template.secret_key = os.environ.get(    Flask, render_template, request, redirect,
     "SECRET_KEY",
     "chave-temporaria-123"
 )
@@ -115,57 +100,71 @@ def obter_jogadores(f, sort_col, sort_dir):
 
     query = """
         SELECT
-            player_id,
-            nome,
-            data_nascimento,
-            clube,
-            escalao,
-            ano_nascimento,
-            distrito,
-            naturalidade
-        FROM jogadores
+            j.player_id,
+            j.nome,
+            j.data_nascimento,
+            j.clube,
+            j.escalao,
+            j.ano_nascimento,
+            j.distrito,
+            j.naturalidade
+        FROM jogadores j
         WHERE 1=1
     """
     params = []
     tem_filtros = False
 
     if f["nome"]:
-        query += " AND nome LIKE ?"
+        query += " AND j.nome LIKE ?"
         params.append(f"%{f['nome']}%")
         tem_filtros = True
 
     if f["clube"]:
-        query += " AND clube LIKE ?"
+        query += " AND j.clube LIKE ?"
         params.append(f"%{f['clube']}%")
         tem_filtros = True
 
     if f["ano_nasc"].isdigit():
-        query += " AND ano_nascimento = ?"
+        query += " AND j.ano_nascimento = ?"
         params.append(int(f["ano_nasc"]))
         tem_filtros = True
 
     if f["distrito"]:
-        query += f" AND distrito IN ({','.join(['?'] * len(f['distrito']))})"
+        query += f" AND j.distrito IN ({','.join(['?'] * len(f['distrito']))})"
         params.extend(f["distrito"])
         tem_filtros = True
 
     if f["naturalidade"]:
-        query += f" AND naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
+        query += f" AND j.naturalidade IN ({','.join(['?'] * len(f['naturalidade']))})"
         params.extend(f["naturalidade"])
         tem_filtros = True
 
+    # >>> PATCH PASSO 3 — filtro "A competir acima do escalão"
+    if f.get("joga_acima"):
+        query += """
+            AND EXISTS (
+                SELECT 1
+                FROM participacao_epoca_atual p
+                WHERE p.player_id = j.player_id
+                  AND p.escalao > (? - j.ano_nascimento + 1)
+            )
+        """
+        params.append(obter_ano_referencia_epoca())
+        tem_filtros = True
+    # <<< PATCH PASSO 3
+
     colunas_validas = {
-        "player_id": "player_id",
-        "nome": "nome",
-        "data_nascimento": "data_nascimento",
-        "clube": "clube",
-        "escalao": "escalao",
-        "categoria": "ano_nascimento",
-        "distrito": "distrito",
-        "naturalidade": "naturalidade"
+        "player_id": "j.player_id",
+        "nome": "j.nome",
+        "data_nascimento": "j.data_nascimento",
+        "clube": "j.clube",
+        "escalao": "j.escalao",
+        "categoria": "j.ano_nascimento",
+        "distrito": "j.distrito",
+        "naturalidade": "j.naturalidade"
     }
 
-    coluna = colunas_validas.get(sort_col, "player_id")
+    coluna = colunas_validas.get(sort_col, "j.player_id")
     direcao = "ASC" if sort_dir == "asc" else "DESC"
 
     if not tem_filtros:
@@ -213,6 +212,9 @@ def index():
         "escalao_fpf": request.args.getlist("escalao_fpf"),
         "distrito": request.args.getlist("distrito"),
         "naturalidade": request.args.getlist("naturalidade"),
+        # >>> PATCH PASSO 3
+        "joga_acima": request.args.get("joga_acima") == "1",
+        # <<< PATCH PASSO 3
     }
 
     sort_col = request.args.get("sort", "player_id")
@@ -248,10 +250,12 @@ def index():
     )
 
 # ======================================================
-# FICHA DO ATLETA (PASSO 2 FINAL)
+# FICHA DO ATLETA (PASSO 2)
 # ======================================================
 
+# >>> PATCH PASSO 3 — correção da rota (HTML escapado)
 @app.route("/jogador/<int:player_id>")
+# <<< PATCH PASSO 3
 def ficha_jogador(player_id):
     if not session.get("autenticado"):
         return redirect("/login")
@@ -305,7 +309,6 @@ def ficha_jogador(player_id):
     """, (player_id,))
     participacao = c.fetchall()
 
-    # ✅ PASSO 2 – cálculo automático
     cat_teorica = calcular_categoria_por_ano(jogador["data_nascimento"].year)
     escalao_teorico = extrair_numero_escalao(cat_teorica)
 
@@ -381,3 +384,17 @@ def exportar():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+    session, url_for, Response
+)
+import sqlite3
+import os
+import csv
+from io import StringIO
+from datetime import date
+
+# ======================================================
+# APP
+# ======================================================
+
+app = Flask(__name__)
+
