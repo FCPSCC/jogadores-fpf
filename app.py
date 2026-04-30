@@ -8,11 +8,20 @@ import sqlite3
 import os
 import csv
 
+# ======================================================
+# APP
+# ======================================================
+
 app = Flask(__name__)
 
 app.secret_key = os.environ.get(
     "SECRET_KEY",
     "chave-temporaria-123"
+)
+
+SITE_PASSWORD = os.environ.get(
+    "SITE_PASSWORD",
+    "MUDAR123"
 )
 
 DB_PATH = "jogadores_fpf.db"
@@ -56,7 +65,7 @@ def extrair_numero_escalao(cat):
         return None
     try:
         return int(cat.replace("Sub-", ""))
-    except:
+    except ValueError:
         return None
 
 # ======================================================
@@ -97,7 +106,7 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL (COM ORDENAÇÃO)
+# QUERY PRINCIPAL (COM ORDENAÇÃO + FILTRO PASSO 3)
 # ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir):
@@ -145,7 +154,7 @@ def obter_jogadores(f, sort_col, sort_dir):
         params.extend(f["naturalidade"])
         tem_filtros = True
 
-    # >>> PATCH PASSO 3 — filtro "A competir acima do escalão"
+    # ✅ PASSO 3 — filtro "A competir acima do escalão"
     if f.get("joga_acima"):
         query += """
             AND EXISTS (
@@ -157,7 +166,6 @@ def obter_jogadores(f, sort_col, sort_dir):
         """
         params.append(obter_ano_referencia_epoca())
         tem_filtros = True
-    # <<< PATCH PASSO 3
 
     colunas_validas = {
         "player_id": "j.player_id",
@@ -185,19 +193,7 @@ def obter_jogadores(f, sort_col, sort_dir):
     jogadores = []
     for r in rows:
         categoria = calcular_categoria_por_ano(r[5])
-
-        if f["categoria"]:
-            if not categoria or categoria not in f["categoria"]:
-                continue
-
-        if f["escalao_fpf"]:
-            if not r[4] or r[4] not in f["escalao_fpf"]:
-                continue
-
-        jogadores.append((
-            r[0], r[1], r[2], r[3],
-            r[4], categoria, r[6], r[7]
-        ))
+        jogadores.append((r[0], r[1], r[2], r[3], r[4], categoria, r[6], r[7]))
 
     return jogadores
 
@@ -218,17 +214,13 @@ def index():
         "escalao_fpf": request.args.getlist("escalao_fpf"),
         "distrito": request.args.getlist("distrito"),
         "naturalidade": request.args.getlist("naturalidade"),
-        # >>> PATCH PASSO 3
-        "joga_acima": request.args.get("joga_acima") == "1",
-        # <<< PATCH PASSO 3
+        "joga_acima": request.args.get("joga_acima") == "1"
     }
 
     sort_col = request.args.get("sort", "player_id")
     sort_dir = request.args.get("dir", "desc")
 
     jogadores = obter_jogadores(f, sort_col, sort_dir)
-
-    categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
 
     conn = get_db()
     c = conn.cursor()
@@ -243,6 +235,8 @@ def index():
     naturalidades = sorted(r[0] for r in c.fetchall())
 
     conn.close()
+
+    categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
 
     return render_template(
         "index.html",
@@ -259,9 +253,7 @@ def index():
 # FICHA DO ATLETA (PASSO 2)
 # ======================================================
 
-# >>> PATCH PASSO 3 — correção da rota (HTML escapado)
 @app.route("/jogador/<int:player_id>")
-# <<< PATCH PASSO 3
 def ficha_jogador(player_id):
     if not session.get("autenticado"):
         return redirect("/login")
@@ -271,15 +263,8 @@ def ficha_jogador(player_id):
     c = conn.cursor()
 
     c.execute("""
-        SELECT
-            player_id,
-            nome,
-            data_nascimento,
-            clube,
-            naturalidade,
-            escalao
-        FROM jogadores
-        WHERE player_id = ?
+        SELECT player_id, nome, data_nascimento, clube, naturalidade, escalao
+        FROM jogadores WHERE player_id = ?
     """, (player_id,))
     jogador = c.fetchone()
 
@@ -288,27 +273,13 @@ def ficha_jogador(player_id):
         return "Jogador não encontrado", 404
 
     c.execute("""
-        SELECT
-            jogos,
-            golos,
-            competicao,
-            epoca,
-            ultima_atualizacao,
-            zz_player_url,
-            foto_url
-        FROM estatisticas_zerozero
-        WHERE player_id = ?
+        SELECT jogos, golos, competicao, epoca, ultima_atualizacao, zz_player_url, foto_url
+        FROM estatisticas_zerozero WHERE player_id = ?
     """, (player_id,))
     zz = c.fetchone()
 
     c.execute("""
-        SELECT
-            modalidade,
-            clube,
-            escalao,
-            escalao_texto,
-            jogos,
-            golos
+        SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
         FROM participacao_epoca_atual
         WHERE player_id = ?
         ORDER BY escalao DESC
@@ -318,9 +289,7 @@ def ficha_jogador(player_id):
     cat_teorica = calcular_categoria_por_ano(jogador["data_nascimento"].year)
     escalao_teorico = extrair_numero_escalao(cat_teorica)
 
-    escalao_real_max = None
-    if participacao:
-        escalao_real_max = max(p["escalao"] for p in participacao)
+    escalao_real_max = max((p["escalao"] for p in participacao), default=None)
 
     joga_acima = (
         escalao_teorico is not None
@@ -357,6 +326,7 @@ def exportar():
         "escalao_fpf": request.args.getlist("escalao_fpf"),
         "distrito": request.args.getlist("distrito"),
         "naturalidade": request.args.getlist("naturalidade"),
+        "joga_acima": request.args.get("joga_acima") == "1"
     }
 
     jogadores = obter_jogadores(f, "player_id", "desc")
@@ -390,17 +360,3 @@ def exportar():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-    session, url_for, Response
-)
-import sqlite3
-import os
-import csv
-from io import StringIO
-from datetime import date
-
-# ======================================================
-# APP
-# ======================================================
-
-app = Flask(__name__)
-
