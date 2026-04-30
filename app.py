@@ -57,6 +57,29 @@ def garantir_tabela_jogadores():
     cur.close()
     conn.close()
 
+def garantir_tabela_estatisticas_zerozero():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS estatisticas_zerozero (
+            id SERIAL PRIMARY KEY,
+            player_id INTEGER,
+            jogos INTEGER,
+            golos INTEGER,
+            competicao TEXT,
+            epoca TEXT,
+            ultima_atualizacao TEXT,
+            zz_player_url TEXT,
+            foto_url TEXT
+        )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
 # ======================================================
 # ÉPOCA ATUAL
 # ======================================================
@@ -218,6 +241,8 @@ def index():
         return redirect("/login")
 
     garantir_tabela_participacao()
+garantir_tabela_jogadores()
+garantir_tabela_estatisticas_zerozero()
 
     f = {
         "nome": request.args.get("nome", ""),
@@ -262,6 +287,75 @@ def index():
         naturalidades=naturalidades,
         filtros=f
     )
+
+@app.route("/admin/import-jogadores")
+def admin_import_jogadores():
+    if request.args.get("key") != SITE_PASSWORD:
+        return "Acesso negado", 403
+
+    garantir_tabela_jogadores()
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    with open("jogadores.csv", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cur.execute("""
+                INSERT INTO jogadores
+                (player_id, nome, data_nascimento, ano_nascimento, clube, escalao, distrito, naturalidade)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (player_id) DO NOTHING
+            """, (
+                int(row["player_id"]),
+                row["nome"],
+                row["data_nascimento"],
+                int(row["ano_nascimento"]),
+                row["clube"],
+                row["escalao"],
+                row["distrito"],
+                row["naturalidade"]
+            ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "Jogadores importados ✅"
+
+@app.route("/admin/import-zz")
+def admin_import_zz():
+    if request.args.get("key") != SITE_PASSWORD:
+        return "Acesso negado", 403
+
+    garantir_tabela_estatisticas_zerozero()
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    with open("estatisticas_zerozero.csv", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cur.execute("""
+                INSERT INTO estatisticas_zerozero
+                (player_id, jogos, golos, competicao, epoca, ultima_atualizacao, zz_player_url, foto_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                int(row["player_id"]),
+                int(row["jogos"]),
+                int(row["golos"]),
+                row["competicao"],
+                row["epoca"],
+                row["ultima_atualizacao"],
+                row["zz_player_url"],
+                row["foto_url"]
+            ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "Estatísticas ZeroZero importadas ✅"
 
 # ======================================================
 # FICHA DO ATLETA
