@@ -5,46 +5,14 @@
 <title>DEBUG Jogador</title>
 
 <style>
-body {
-    font-family: monospace;
-    background: #f4f6f8;
-    margin: 0;
-}
-.container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 20px;
-}
-.section {
-    background: #fff;
-    border: 1px solid #ccc;
-    margin-bottom: 20px;
-    padding: 15px;
-}
-.section h2 {
-    margin-top: 0;
-    font-size: 18px;
-    background: #eee;
-    padding: 8px;
-}
-pre {
-    background: #111;
-    color: #0f0;
-    padding: 12px;
-    overflow-x: auto;
-}
-table {
-    border-collapse: collapse;
-    width: 100%;
-}
-th, td {
-    border: 1px solid #bbb;
-    padding: 6px;
-    text-align: left;
-}
-th {
-    background: #eaeaea;
-}
+body { font-family: monospace; background:#f4f4f4; }
+.container { max-width:1200px; margin:auto; padding:20px; }
+.section { background:#fff; border:1px solid #ccc; margin-bottom:20px; padding:15px; }
+.section h2 { margin-top:0; background:#eee; padding:8px; }
+pre { background:#111; color:#0f0; padding:12px; overflow-x:auto; }
+table { border-collapse:collapse; width:100%; }
+th,td { border:1px solid #bbb; padding:6px; }
+th { background:#eaeaea; }
 </style>
 </head>
 
@@ -52,66 +20,60 @@ th {
 <div class="container">
 
 <div class="section">
-    <h2>DEBUG · jogador (dict completo)</h2>
-    <pre>{{ jogador | tojson(indent=2, ensure_ascii=False) }}</pre>
+<h2>DEBUG · jogador</h2>
+<pre>{{ jogador | dict | tojson(indent=2, ensure_ascii=False) }}</pre>
 </div>
 
 <div class="section">
-    <h2>DEBUG · zz (ZeroZero)</h2>
-    {% if zz %}
-        <pre>{{ zz | tojson(indent=2, ensure_ascii=False) }}</pre>
-    {% else %}
-        <p><strong>zz = None</strong></p>
-    {% endif %}
+<h2>DEBUG · zz</h2>
+{% if zz %}
+<pre>{{ zz | dict | tojson(indent=2, ensure_ascii=False) }}</pre>
+{% else %}
+<p>zz = None</p>
+{% endif %}
 </div>
 
 <div class="section">
-    <h2>DEBUG · flags</h2>
-    <p><strong>joga_acima:</strong> {{ joga_acima }}</p>
-    <p><strong>escalao_teorico:</strong> {{ escalao_teorico }}</p>
-    <p><strong>escalao_real_max:</strong> {{ escalao_real_max }}</p>
+<h2>DEBUG · flags</h2>
+<p>joga_acima: {{ joga_acima }}</p>
+<p>escalao_teorico: {{ escalao_teorico }}</p>
+<p>escalao_real_max: {{ escalao_real_max }}</p>
 </div>
 
 <div class="section">
-    <h2>DEBUG · participacao (raw)</h2>
-    {% if participacao %}
-        <pre>{{ participacao | tojson(indent=2, ensure_ascii=False) }}</pre>
-    {% else %}
-        <p><strong>participacao = [] (lista vazia)</strong></p>
-    {% endif %}
+<h2>DEBUG · participacao (raw)</h2>
+{% if participacao %}
+<pre>
+{% for p in participacao %}
+{{ p | dict | tojson(indent=2, ensure_ascii=False) }}
+{% endfor %}
+</pre>
+{% else %}
+<p>participacao = []</p>
+{% endif %}
 </div>
 
 <div class="section">
-    <h2>DEBUG · participacao (tabela)</h2>
-
-    {% if participacao %}
-    <table>
-        <tr>
-            <th>#</th>
-            <th>player_id</th>
-            <th>modalidade</th>
-            <th>clube</th>
-            <th>escalao</th>
-            <th>escalao_texto</th>
-            <th>jogos</th>
-            <th>golos</th>
-        </tr>
-        {% for p in participacao %}
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ p["player_id"] }}</td>
-            <td>{{ p["modalidade"] }}</td>
-            <td>{{ p["clube"] }}</td>
-            <td>{{ p["escalao"] }}</td>
-            <td>{{ p["escalao_texto"] }}</td>
-            <td>{{ p["jogos"] }}</td>
-            <td>{{ p["golos"] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-        <p><em>Sem linhas em participacao</em></p>
-    {% endif %}
+<h2>DEBUG · participacao (tabela)</h2>
+{% if participacao %}
+<table>
+<tr>
+<th>#</th><th>modalidade</th><th>clube</th><th>escalao</th><th>jogos</th><th>golos</th>
+</tr>
+{% for p in participacao %}
+<tr>
+<td>{{ loop.index }}</td>
+<td>{{ p["modalidade"] }}</td>
+<td>{{ p["clube"] }}</td>
+<td>{{ p["escalao"] }}</td>
+<td>{{ p["jogos"] }}</td>
+<td>{{ p["golos"] }}</td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Sem linhas</p>
+{% endif %}
 </div>
 
 </div>
