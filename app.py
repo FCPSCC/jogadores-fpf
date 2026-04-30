@@ -362,14 +362,16 @@ def exportar():
 
 @app.route("/admin/import")
 def admin_import():
-    # 🔐 segurança mínima: só tu sabes esta password
     if request.args.get("key") != os.environ.get("SITE_PASSWORD", "MUDAR123"):
         return "Acesso negado", 403
 
+    ficheiro = "participacao_epoca_atual.csv"
+
+    if not os.path.exists(ficheiro):
+        return f"ERRO: ficheiro {ficheiro} não encontrado no servidor", 500
+
     conn = get_db()
     c = conn.cursor()
-
-    ficheiro = "participacao_epoca_atual.csv"
 
     with open(ficheiro, newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
