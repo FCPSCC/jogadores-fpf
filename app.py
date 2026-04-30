@@ -98,10 +98,10 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL (CORRIGIDA – LIMIT SE NÃO HOUVER FILTROS)
+# QUERY PRINCIPAL (COM ORDENAÇÃO)
 # ======================================================
 
-def obter_jogadores(f):
+def obter_jogadores(f, sort_col, sort_dir):
     conn = get_db()
     c = conn.cursor()
 
@@ -147,11 +147,25 @@ def obter_jogadores(f):
         params.extend(f["naturalidade"])
         tem_filtros = True
 
-    # ✅ CORREÇÃO DO ERRO 502 / OOM
+    # ---------- ORDENAÇÃO SEGURA ----------
+    colunas_validas = {
+        "player_id": "player_id",
+        "nome": "nome",
+        "data_nascimento": "data_nascimento",
+        "clube": "clube",
+        "escalao": "escalao",
+        "categoria": "ano_nascimento",
+        "distrito": "distrito",
+        "naturalidade": "naturalidade"
+    }
+
+    coluna = colunas_validas.get(sort_col, "player_id")
+    direcao = "ASC" if sort_dir == "asc" else "DESC"
+
     if not tem_filtros:
-        query += " ORDER BY player_id DESC LIMIT 100"
+        query += f" ORDER BY {coluna} {direcao} LIMIT 100"
     else:
-        query += " ORDER BY player_id DESC"
+        query += f" ORDER BY {coluna} {direcao}"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -201,7 +215,11 @@ def index():
         "naturalidade": request.args.getlist("naturalidade"),
     }
 
-    jogadores = obter_jogadores(f)
+    # 🔹 parâmetros de ordenação
+    sort_col = request.args.get("sort", "player_id")
+    sort_dir = request.args.get("dir", "desc")
+
+    jogadores = obter_jogadores(f, sort_col, sort_dir)
 
     categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
 
@@ -307,7 +325,7 @@ def exportar():
         "naturalidade": request.args.getlist("naturalidade"),
     }
 
-    jogadores = obter_jogadores(f)
+    jogadores = obter_jogadores(f, "player_id", "desc")
 
     output = StringIO()
     writer = csv.writer(output, delimiter=";")
