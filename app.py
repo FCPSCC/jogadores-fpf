@@ -241,8 +241,6 @@ def index():
         return redirect("/login")
 
     garantir_tabela_participacao()
-garantir_tabela_jogadores()
-garantir_tabela_estatisticas_zerozero()
 
     f = {
         "nome": request.args.get("nome", ""),
@@ -259,7 +257,7 @@ garantir_tabela_estatisticas_zerozero()
     sort_dir = request.args.get("dir", "desc")
 
     jogadores = obter_jogadores(f, sort_col, sort_dir)
-
+    
     conn = get_db()
     c = conn.cursor()
 
