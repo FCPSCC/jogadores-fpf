@@ -365,9 +365,12 @@ def admin_import():
     if request.args.get("key") != os.environ.get("SITE_PASSWORD", "MUDAR123"):
         return "Acesso negado", 403
 
-    ficheiro = "participacao_epoca_atual.csv"
-
     try:
+        # ✅ GARANTIR TABELA ANTES DE TUDO
+        garantir_tabela_participacao()
+
+        ficheiro = "participacao_epoca_atual.csv"
+
         if not os.path.exists(ficheiro):
             return f"ERRO: ficheiro '{ficheiro}' não encontrado", 500
 
