@@ -36,20 +36,20 @@ def get_db():
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-def garantir_tabela_participacao():
+def garantir_tabela_jogadores():
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS participacao_epoca_atual (
-            id SERIAL PRIMARY KEY,
-            player_id INTEGER,
-            modalidade TEXT,
+        CREATE TABLE IF NOT EXISTS jogadores (
+            player_id INTEGER PRIMARY KEY,
+            nome TEXT,
+            data_nascimento DATE,
+            ano_nascimento INTEGER,
             clube TEXT,
-            escalao INTEGER,
-            escalao_texto TEXT,
-            jogos INTEGER,
-            golos INTEGER
+            escalao TEXT,
+            distrito TEXT,
+            naturalidade TEXT
         )
     """)
 
