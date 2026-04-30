@@ -4,13 +4,16 @@ from flask import (
 )
 from io import StringIO
 from datetime import date
-import sqlite3
 import os
 import csv
+
+import psycopg2
+import psycopg2.extras
 
 # ======================================================
 # APP
 # ======================================================
+
 
 app = Flask(__name__)
 
@@ -24,20 +27,25 @@ SITE_PASSWORD = os.environ.get(
     "MUDAR123"
 )
 
-DB_PATH = "jogadores_fpf.db"
 
 # ======================================================
 # BASE DE DADOS
 # ======================================================
 
+
 def get_db():
-    return sqlite3.connect(DB_PATH, timeout=10)
+    return psycopg2.connect(
+        os.environ["DATABASE_URL"],
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
 def garantir_tabela_participacao():
     conn = get_db()
-    c = conn.cursor()
-    c.execute("""
+    cur = conn.cursor()
+
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS participacao_epoca_atual (
+            id SERIAL PRIMARY KEY,
             player_id INTEGER,
             modalidade TEXT,
             clube TEXT,
@@ -47,6 +55,7 @@ def garantir_tabela_participacao():
             golos INTEGER
         )
     """)
+
     conn.commit()
     conn.close()
 
