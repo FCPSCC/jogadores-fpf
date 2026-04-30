@@ -33,18 +33,33 @@ DB_PATH = "jogadores_fpf.db"
 def get_db():
     return sqlite3.connect(DB_PATH, timeout=10)
 
+def garantir_tabela_participacao():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS participacao_epoca_atual (
+            player_id INTEGER,
+            modalidade TEXT,
+            clube TEXT,
+            escalao INTEGER,
+            escalao_texto TEXT,
+            jogos INTEGER,
+            golos INTEGER
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 # ======================================================
-# ÉPOCA ATUAL (AUTOMÁTICA)
+# ÉPOCA ATUAL
 # ======================================================
 
 def obter_ano_referencia_epoca():
     hoje = date.today()
-    if hoje.month >= 7:
-        return hoje.year
-    return hoje.year - 1
+    return hoje.year if hoje.month >= 7 else hoje.year - 1
 
 # ======================================================
-# CATEGORIA FEDERATIVA (TEÓRICA)
+# CATEGORIA FEDERATIVA
 # ======================================================
 
 def calcular_categoria_por_ano(ano_nascimento):
@@ -61,12 +76,9 @@ def calcular_categoria_por_ano(ano_nascimento):
     return "Sénior"
 
 def extrair_numero_escalao(cat):
-    if not cat or not cat.startswith("Sub-"):
-        return None
-    try:
+    if cat and cat.startswith("Sub-"):
         return int(cat.replace("Sub-", ""))
-    except ValueError:
-        return None
+    return None
 
 # ======================================================
 # ORDEM ESCALÃO FPF
@@ -106,7 +118,7 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL (COM ORDENAÇÃO + FILTRO PASSO 3)
+# QUERY PRINCIPAL
 # ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir):
@@ -115,14 +127,9 @@ def obter_jogadores(f, sort_col, sort_dir):
 
     query = """
         SELECT
-            j.player_id,
-            j.nome,
-            j.data_nascimento,
-            j.clube,
-            j.escalao,
-            j.ano_nascimento,
-            j.distrito,
-            j.naturalidade
+            j.player_id, j.nome, j.data_nascimento,
+            j.clube, j.escalao, j.ano_nascimento,
+            j.distrito, j.naturalidade
         FROM jogadores j
         WHERE 1=1
     """
@@ -154,7 +161,7 @@ def obter_jogadores(f, sort_col, sort_dir):
         params.extend(f["naturalidade"])
         tem_filtros = True
 
-    # ✅ PASSO 3 — filtro "A competir acima do escalão"
+    # PASSO 3
     if f.get("joga_acima"):
         query += """
             AND EXISTS (
@@ -167,24 +174,16 @@ def obter_jogadores(f, sort_col, sort_dir):
         params.append(obter_ano_referencia_epoca())
         tem_filtros = True
 
-    colunas_validas = {
-        "player_id": "j.player_id",
-        "nome": "j.nome",
-        "data_nascimento": "j.data_nascimento",
-        "clube": "j.clube",
-        "escalao": "j.escalao",
-        "categoria": "j.ano_nascimento",
-        "distrito": "j.distrito",
-        "naturalidade": "j.naturalidade"
-    }
+    coluna = sort_col if sort_col in [
+        "player_id", "nome", "data_nascimento", "clube",
+        "escalao", "ano_nascimento", "distrito", "naturalidade"
+    ] else "player_id"
 
-    coluna = colunas_validas.get(sort_col, "j.player_id")
     direcao = "ASC" if sort_dir == "asc" else "DESC"
 
+    query += f" ORDER BY j.{coluna} {direcao}"
     if not tem_filtros:
-        query += f" ORDER BY {coluna} {direcao} LIMIT 100"
-    else:
-        query += f" ORDER BY {coluna} {direcao}"
+        query += " LIMIT 100"
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -205,6 +204,8 @@ def obter_jogadores(f, sort_col, sort_dir):
 def index():
     if not session.get("autenticado"):
         return redirect("/login")
+
+    garantir_tabela_participacao()
 
     f = {
         "nome": request.args.get("nome", ""),
@@ -250,7 +251,7 @@ def index():
     )
 
 # ======================================================
-# FICHA DO ATLETA (PASSO 2)
+# FICHA DO ATLETA
 # ======================================================
 
 @app.route("/jogador/<int:player_id>")
@@ -263,8 +264,10 @@ def ficha_jogador(player_id):
     c = conn.cursor()
 
     c.execute("""
-        SELECT player_id, nome, data_nascimento, clube, naturalidade, escalao
-        FROM jogadores WHERE player_id = ?
+        SELECT player_id, nome, data_nascimento, ano_nascimento,
+               clube, naturalidade, escalao
+        FROM jogadores
+        WHERE player_id = ?
     """, (player_id,))
     jogador = c.fetchone()
 
@@ -273,20 +276,25 @@ def ficha_jogador(player_id):
         return "Jogador não encontrado", 404
 
     c.execute("""
-        SELECT jogos, golos, competicao, epoca, ultima_atualizacao, zz_player_url, foto_url
-        FROM estatisticas_zerozero WHERE player_id = ?
+        SELECT jogos, golos, competicao, epoca,
+               ultima_atualizacao, zz_player_url, foto_url
+        FROM estatisticas_zerozero
+        WHERE player_id = ?
     """, (player_id,))
     zz = c.fetchone()
 
-    c.execute("""
-        SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
-        FROM participacao_epoca_atual
-        WHERE player_id = ?
-        ORDER BY escalao DESC
-    """, (player_id,))
-    participacao = c.fetchall()
+    try:
+        c.execute("""
+            SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
+            FROM participacao_epoca_atual
+            WHERE player_id = ?
+            ORDER BY escalao DESC
+        """, (player_id,))
+        participacao = c.fetchall()
+    except sqlite3.OperationalError:
+        participacao = []
 
-    cat_teorica = calcular_categoria_por_ano(jogador["data_nascimento"].year)
+    cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = extrair_numero_escalao(cat_teorica)
 
     escalao_real_max = max((p["escalao"] for p in participacao), default=None)
@@ -336,8 +344,7 @@ def exportar():
 
     writer.writerow([
         "ID","Nome","Nascimento","Clube",
-        "Escalão","Categoria",
-        "Distrito","Naturalidade","FPF"
+        "Escalão","Categoria","Distrito","Naturalidade","FPF"
     ])
 
     for j in jogadores:
