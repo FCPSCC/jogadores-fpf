@@ -36,13 +36,12 @@ a:hover {
     text-decoration: underline;
 }
 
-/* topo */
 .top-bar {
     margin-bottom: 15px;
     font-weight: 600;
 }
 
-/* header */
+/* HEADER */
 .player-header {
     background: var(--card);
     padding: 20px;
@@ -53,7 +52,7 @@ a:hover {
     gap: 20px;
 }
 
-/* fundo FC Porto */
+/* Fundo FC Porto */
 .player-header.porto {
     background: linear-gradient(135deg, var(--porto-blue), #001b4d);
     color: #fff;
@@ -65,7 +64,7 @@ a:hover {
     color: #fff;
 }
 
-/* foto */
+/* FOTO */
 .photo {
     width: 120px;
     height: 120px;
@@ -80,14 +79,13 @@ a:hover {
     object-fit: cover;
 }
 
-/* nome */
+/* INFO */
 .player-name {
     font-size: 28px;
     font-weight: 800;
     margin-bottom: 8px;
 }
 
-/* meta */
 .player-meta {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -105,7 +103,7 @@ a:hover {
     font-weight: 500;
 }
 
-/* secções */
+/* SEÇÕES */
 .section {
     margin-top: 30px;
 }
@@ -116,7 +114,7 @@ a:hover {
     margin-bottom: 12px;
 }
 
-/* stats */
+/* STATS */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -143,7 +141,7 @@ a:hover {
     margin-top: 4px;
 }
 
-/* info */
+/* INFO CARD */
 .info-card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -151,7 +149,7 @@ a:hover {
     padding: 16px;
 }
 
-/* footer */
+/* FOOTER */
 .footer {
     margin-top: 25px;
     font-size: 12px;
@@ -170,12 +168,12 @@ a:hover {
         ← <a href="/">Voltar à lista</a>
     </div>
 
-    <!-- HEADER -->
+    <!-- CABEÇALHO -->
     <div class="player-header {% if jogador[3] and 'porto' in jogador[3]|lower %}porto{% endif %}">
 
         <div class="photo">
             <img
-                src="{% if zz and zz[5] %}https://cdn-img.staticzz.com/img/jogadores/{{ zz[5].split('/')[-1] }}.jpg{% else %}/static/sem_foto.png{% endif %}"
+                src="{{ zz[6] if zz and zz[6] else '/static/sem_foto.png' }}"
                 alt="Foto do jogador"
                 onerror="this.src='/static/sem_foto.png';"
             >
@@ -231,8 +229,11 @@ a:hover {
                 <p><span class="label">Competição:</span> {{ zz[2] }}</p>
                 <p><span class="label">Última atualização:</span> {{ zz[4] }}</p>
                 <p>
-                    <a href="{{ zz[5] }}" target="_blank">Ver no ZeroZero</a> |
-                    <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}" target="_blank">Ver na FPF</a>
+                    {% if zz[5] %}
+                        <a href="{{ zz[5] }}" target="_blank">Ver no ZeroZero</a> |
+                    {% endif %}
+                    <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador[0] }}"
+                       target="_blank">Ver na FPF</a>
                 </p>
             </div>
         </div>
