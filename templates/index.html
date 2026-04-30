@@ -40,9 +40,17 @@ function limpar(){
 <header>
 <form method="get" class="filtros">
 
-<div class="filtro">Nome<input name="nome" value="{{ filtros.nome }}"></div>
-<div class="filtro">Clube<input name="clube" value="{{ filtros.clube }}"></div>
-<div class="filtro">Ano<input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}"></div>
+<div class="filtro">Nome
+    <input name="nome" value="{{ filtros.nome }}">
+</div>
+
+<div class="filtro">Clube
+    <input name="clube" value="{{ filtros.clube }}">
+</div>
+
+<div class="filtro">Ano
+    <input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}">
+</div>
 
 <!-- ================== CATEGORIA ================== -->
 <div class="filtro">
@@ -120,6 +128,15 @@ function limpar(){
 </details>
 </div>
 
+<!-- ✅ NOVO FILTRO: JOGA ACIMA DO ESCALÃO -->
+<div class="filtro" style="margin-top:18px;">
+<label>
+<input type="checkbox" name="joga_acima" value="1"
+{% if filtros.joga_acima %}checked{% endif %}>
+A competir acima do escalão
+</label>
+</div>
+
 <div class="filtro" style="margin-top:auto;">
 <button type="submit">Pesquisar</button>
 <button type="button" onclick="limpar()">Limpar</button>
@@ -152,15 +169,23 @@ function limpar(){
 ] %}
 {% for col, label in cols %}
 <th>
-{{ label }}
-<a href="?{{ request.query_string.decode()
-| replace('sort=' ~ col ~ '&amp;dir=asc', '')
-| replace('sort=' ~ col ~ '&amp;dir=desc', '')
-}}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=asc">▲</a>
-<a href="?{{ request.query_string.decode()
-| replace('sort=' ~ col ~ '&amp;dir=asc', '')
-| replace('sort=' ~ col ~ '&amp;dir=desc', '')
-}}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=desc">▼</a>
+  {{ label }}
+
+  <a href="?{{ request.query_string.decode()
+      | replace('sort=' ~ col, '')
+      | replace('dir=asc', '')
+      | replace('dir=desc', '')
+  }}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=asc">
+    ▲
+  </a>
+
+  <a href="?{{ request.query_string.decode()
+      | replace('sort=' ~ col, '')
+      | replace('dir=asc', '')
+      | replace('dir=desc', '')
+  }}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=desc">
+    ▼
+  </a>
 </th>
 {% endfor %}
 <th>FPF</th>
@@ -171,12 +196,7 @@ function limpar(){
 {% for j in jogadores %}
 <tr>
 <td>{{ j[0] }}</td>
-
-<!-- ✅ ÚNICA ALTERAÇÃO: nome clicável -->
-<td>
-<a href="/jogador/{{ j[0] }}">{{ j[1] }}</a>
-</td>
-
+<td><a href="/jogador/{{ j[0] }}">{{ j[1] }}</a></td>
 <td>{{ j[2] }}</td>
 <td>{{ j[3] }}</td>
 <td>{{ j[4] or "—" }}</td>

@@ -44,7 +44,7 @@ def obter_ano_referencia_epoca():
     return hoje.year - 1
 
 # ======================================================
-# CATEGORIA FEDERATIVA
+# CATEGORIA FEDERATIVA (TEÓRICA)
 # ======================================================
 
 def calcular_categoria_por_ano(ano_nascimento):
@@ -59,6 +59,14 @@ def calcular_categoria_por_ano(ano_nascimento):
     if 5 <= sub <= 19:
         return f"Sub-{sub}"
     return "Sénior"
+
+def extrair_numero_escalao(cat):
+    if not cat or not cat.startswith("Sub-"):
+        return None
+    try:
+        return int(cat.replace("Sub-", ""))
+    except:
+        return None
 
 # ======================================================
 # ORDEM ESCALÃO FPF
@@ -119,7 +127,6 @@ def obter_jogadores(f, sort_col, sort_dir):
         WHERE 1=1
     """
     params = []
-
     tem_filtros = False
 
     if f["nome"]:
@@ -147,7 +154,6 @@ def obter_jogadores(f, sort_col, sort_dir):
         params.extend(f["naturalidade"])
         tem_filtros = True
 
-    # ---------- ORDENAÇÃO SEGURA ----------
     colunas_validas = {
         "player_id": "player_id",
         "nome": "nome",
@@ -184,14 +190,8 @@ def obter_jogadores(f, sort_col, sort_dir):
                 continue
 
         jogadores.append((
-            r[0],      # ID
-            r[1],      # Nome
-            r[2],      # Nascimento
-            r[3],      # Clube
-            r[4],      # Escalão
-            categoria, # Categoria
-            r[6],      # Distrito
-            r[7],      # Naturalidade
+            r[0], r[1], r[2], r[3],
+            r[4], categoria, r[6], r[7]
         ))
 
     return jogadores
@@ -215,7 +215,6 @@ def index():
         "naturalidade": request.args.getlist("naturalidade"),
     }
 
-    # 🔹 parâmetros de ordenação
     sort_col = request.args.get("sort", "player_id")
     sort_dir = request.args.get("dir", "desc")
 
@@ -226,15 +225,8 @@ def index():
     conn = get_db()
     c = conn.cursor()
 
-    c.execute("""
-        SELECT DISTINCT escalao
-        FROM jogadores
-        WHERE escalao IS NOT NULL AND escalao != ''
-    """)
-    escalaoes_fpf = sorted(
-        [r[0] for r in c.fetchall()],
-        key=ordem_escaloes_fpf
-    )
+    c.execute("SELECT DISTINCT escalao FROM jogadores WHERE escalao IS NOT NULL AND escalao != ''")
+    escalaoes_fpf = sorted([r[0] for r in c.fetchall()], key=ordem_escaloes_fpf)
 
     c.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL")
     distritos = sorted(r[0] for r in c.fetchall())
@@ -256,7 +248,7 @@ def index():
     )
 
 # ======================================================
-# FICHA DO ATLETA
+# FICHA DO ATLETA (PASSO 2 FINAL)
 # ======================================================
 
 @app.route("/jogador/<int:player_id>")
@@ -264,7 +256,8 @@ def ficha_jogador(player_id):
     if not session.get("autenticado"):
         return redirect("/login")
 
-    conn = get_db()
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("""
@@ -298,12 +291,44 @@ def ficha_jogador(player_id):
     """, (player_id,))
     zz = c.fetchone()
 
+    c.execute("""
+        SELECT
+            modalidade,
+            clube,
+            escalao,
+            escalao_texto,
+            jogos,
+            golos
+        FROM participacao_epoca_atual
+        WHERE player_id = ?
+        ORDER BY escalao DESC
+    """, (player_id,))
+    participacao = c.fetchall()
+
+    # ✅ PASSO 2 – cálculo automático
+    cat_teorica = calcular_categoria_por_ano(jogador["data_nascimento"].year)
+    escalao_teorico = extrair_numero_escalao(cat_teorica)
+
+    escalao_real_max = None
+    if participacao:
+        escalao_real_max = max(p["escalao"] for p in participacao)
+
+    joga_acima = (
+        escalao_teorico is not None
+        and escalao_real_max is not None
+        and escalao_real_max > escalao_teorico
+    )
+
     conn.close()
 
     return render_template(
         "jogador.html",
         jogador=jogador,
-        zz=zz
+        zz=zz,
+        participacao=participacao,
+        escalao_teorico=escalao_teorico,
+        escalao_real_max=escalao_real_max,
+        joga_acima=joga_acima
     )
 
 # ======================================================
