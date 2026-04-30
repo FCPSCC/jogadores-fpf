@@ -2,81 +2,243 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>DEBUG Jogador</title>
+<title>{{ jogador["nome"] }}</title>
 
 <style>
-body { font-family: monospace; background:#f4f4f4; }
-.container { max-width:1200px; margin:auto; padding:20px; }
-.section { background:#fff; border:1px solid #ccc; margin-bottom:20px; padding:15px; }
-.section h2 { margin-top:0; background:#eee; padding:8px; }
-table { border-collapse:collapse; width:100%; }
-th,td { border:1px solid #bbb; padding:6px; }
-th { background:#eaeaea; }
+:root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --porto-blue: #003087;
+    --secondary: #6c757d;
+    --border: #e0e0e0;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: #222;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+a {
+    color: var(--porto-blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+.top-bar {
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* CABEÇALHO */
+.player-header {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 20px;
+}
+
+/* Destaque FC Porto */
+.player-header.porto {
+    background: linear-gradient(135deg, var(--porto-blue), #001b4d);
+    color: #fff;
+}
+.player-header.porto .label,
+.player-header.porto .value,
+.player-header.porto .player-name {
+    color: #fff;
+}
+
+/* FOTO */
+.photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #e5e5e5;
+}
+.photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* INFO */
+.player-name {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.player-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 6px;
+    column-gap: 20px;
+    font-size: 14px;
+}
+.label {
+    color: var(--secondary);
+    font-weight: 600;
+}
+.value {
+    font-weight: 500;
+}
+
+/* BADGE JOGA ACIMA */
+.badge-up {
+    display: inline-block;
+    margin: 6px 0 10px 0;
+    background: #f39c12;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+/* SEÇÕES */
+.section {
+    margin-top: 30px;
+}
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* HISTÓRICO */
+.table-historico {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.table-historico th,
+.table-historico td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+}
+.table-historico th {
+    background: #f2f2f2;
+}
+.badge-escalao {
+    font-weight: bold;
+    color: #003087;
+}
+
+/* FOOTER */
+.footer {
+    margin-top: 25px;
+    font-size: 12px;
+    color: var(--secondary);
+    display: flex;
+    justify-content: space-between;
+}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<div class="section">
-<h2>DEBUG · jogador</h2>
-<p>player_id: {{ jogador["player_id"] }}</p>
-<p>nome: {{ jogador["nome"] }}</p>
-<p>data_nascimento: {{ jogador["data_nascimento"] }}</p>
-<p>ano_nascimento: {{ jogador["ano_nascimento"] }}</p>
-<p>clube: {{ jogador["clube"] }}</p>
-<p>escalao FPF: {{ jogador["escalao"] }}</p>
-<p>naturalidade: {{ jogador["naturalidade"] }}</p>
+<div class="top-bar">
+    ← <a href="/">Voltar à lista</a>
 </div>
 
-<div class="section">
-<h2>DEBUG · flags</h2>
-<p>joga_acima: {{ joga_acima }}</p>
-<p>escalao_teorico: {{ escalao_teorico }}</p>
-<p>escalao_real_max: {{ escalao_real_max }}</p>
+<!-- CABEÇALHO -->
+<div class="player-header {% if jogador['clube'] and 'porto' in jogador['clube']|lower %}porto{% endif %}">
+    <div class="photo">
+        <img
+            src="{{ zz['foto_url'] if zz and zz['foto_url'] else url_for('static', filename='sem_foto.png') }}"
+            alt="Foto do jogador"
+            onerror="this.src='{{ url_for('static', filename='sem_foto.png') }}';"
+        >
+    </div>
+
+    <div>
+        <div class="player-name">{{ jogador["nome"] }}</div>
+
+        {% if joga_acima %}
+        <div class="badge-up">
+            🟧 A competir acima do escalão (Sub‑{{ escalao_teorico }} → Sub‑{{ escalao_real_max }})
+        </div>
+        {% endif %}
+
+        <div class="player-meta">
+            <div><span class="label">Clube:</span> <span class="value">{{ jogador["clube"] or "—" }}</span></div>
+            <div><span class="label">Data nasc.:</span> <span class="value">{{ jogador["data_nascimento"] or "—" }}</span></div>
+            <div><span class="label">Naturalidade:</span> <span class="value">{{ jogador["naturalidade"] or "—" }}</span></div>
+            <div><span class="label">Escalão (FPF):</span> <span class="value">{{ jogador["escalao"] or "—" }}</span></div>
+        </div>
+    </div>
 </div>
 
-<div class="section">
-<h2>DEBUG · zz (ZeroZero)</h2>
+<!-- ESTATÍSTICAS ZEROZERO -->
 {% if zz %}
-<p>jogos: {{ zz["jogos"] }}</p>
-<p>golos: {{ zz["golos"] }}</p>
-<p>competicao: {{ zz["competicao"] }}</p>
-<p>epoca: {{ zz["epoca"] }}</p>
-{% else %}
-<p>zz = None</p>
+<div class="section">
+    <div class="section-title">Estatísticas · ZeroZero</div>
+    <p><strong>Época:</strong> {{ zz["epoca"] }}</p>
+    <p><strong>Competição:</strong> {{ zz["competicao"] }}</p>
+    <p><strong>Jogos:</strong> {{ zz["jogos"] }} | <strong>Golos:</strong> {{ zz["golos"] }}</p>
+    <p>
+        {% if zz["zz_player_url"] %}
+        <a href="{{ zz['zz_player_url'] }}" target="_blank">Ver no ZeroZero</a> |
+        {% endif %}
+        <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador['player_id'] }}" target="_blank">
+            Ver na FPF
+        </a>
+    </p>
+</div>
 {% endif %}
+
+<!-- HISTÓRICO COMPETITIVO -->
+<div class="section">
+    <div class="section-title">Época 2025/26 · Histórico competitivo (ZeroZero)</div>
+
+    {% if participacao %}
+    <table class="table-historico">
+        <thead>
+            <tr>
+                <th>Modalidade</th>
+                <th>Clube</th>
+                <th>Escalão real</th>
+                <th>Jogos</th>
+                <th>Golos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in participacao %}
+            <tr>
+                <td>{{ p["modalidade"] }}</td>
+                <td>{{ p["clube"] }}</td>
+                <td>
+                    <span class="badge-escalao">Sub‑{{ p["escalao"] }}</span>
+                    <span style="font-size:12px; color:#666;">({{ p["escalao_texto"] }})</span>
+                </td>
+                <td>{{ p["jogos"] }}</td>
+                <td>{{ p["golos"] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Sem registos de participação na época corrente.</p>
+    {% endif %}
 </div>
 
-<div class="section">
-<h2>DEBUG · participacao</h2>
-
-{% if participacao %}
-<table>
-<tr>
-<th>#</th>
-<th>modalidade</th>
-<th>clube</th>
-<th>escalao</th>
-<th>escalao_texto</th>
-<th>jogos</th>
-<th>golos</th>
-</tr>
-{% for p in participacao %}
-<tr>
-<td>{{ loop.index }}</td>
-<td>{{ p["modalidade"] }}</td>
-<td>{{ p["clube"] }}</td>
-<td>{{ p["escalao"] }}</td>
-<td>{{ p["escalao_texto"] }}</td>
-<td>{{ p["jogos"] }}</td>
-<td>{{ p["golos"] }}</td>
-</tr>
-{% endfor %}
-</table>
-{% else %}
-<p>participacao = lista vazia</p>
-{% endif %}
+<div class="footer">
+    <div>ID interno: {{ jogador["player_id"] }}</div>
+    <div>FPF + ZeroZero</div>
 </div>
 
 </div>
