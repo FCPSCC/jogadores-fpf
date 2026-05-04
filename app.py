@@ -3,9 +3,7 @@ from flask import (
     session, url_for, Response
 )
 from io import StringIO
-# >>> PATCH: importar datetime para conversão de datas
 from datetime import date, datetime
-# <<< PATCH
 import os
 import csv
 
@@ -170,10 +168,10 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# QUERY PRINCIPAL
+# QUERY PRINCIPAL (COM LIMIT / OFFSET)
 # ======================================================
 
-def obter_jogadores(f, sort_col, sort_dir):
+def obter_jogadores(f, sort_col, sort_dir, offset=0):
     conn = get_db()
     c = conn.cursor()
 
@@ -197,7 +195,9 @@ def obter_jogadores(f, sort_col, sort_dir):
     ] else "player_id"
 
     direcao = "ASC" if sort_dir == "asc" else "DESC"
-    query += f" ORDER BY j.{coluna} {direcao}"
+
+    query += f" ORDER BY j.{coluna} {direcao} LIMIT 100 OFFSET %s"
+    params.append(offset)
 
     c.execute(query, params)
     rows = c.fetchall()
@@ -217,7 +217,7 @@ def obter_jogadores(f, sort_col, sort_dir):
     return jogadores
 
 # ======================================================
-# INDEX
+# INDEX (PÁGINA SEGURA PARA 195K JOGADORES)
 # ======================================================
 
 @app.route("/")
@@ -227,7 +227,18 @@ def index():
 
     garantir_tabela_participacao()
 
-    jogadores = obter_jogadores({}, "player_id", "desc")
+    f = {
+        "nome": request.args.get("nome", "")
+    }
+
+    sort_col = request.args.get("sort", "player_id")
+    sort_dir = request.args.get("dir", "desc")
+    page = int(request.args.get("page", 0))
+    offset = page * 100
+
+    jogadores = []
+    if f["nome"]:
+        jogadores = obter_jogadores(f, sort_col, sort_dir, offset)
 
     return render_template(
         "index.html",
@@ -237,66 +248,9 @@ def index():
         escalaoes_fpf=[],
         distritos=[],
         naturalidades=[],
-        filtros={}
+        filtros=f,
+        page=page
     )
-
-# ======================================================
-# ADMIN IMPORT JOGADORES (PATCH APLICADO)
-# ======================================================
-
-@app.route("/admin/import-jogadores")
-def admin_import_jogadores():
-    if request.args.get("key") != SITE_PASSWORD:
-        return "Acesso negado", 403
-
-    garantir_tabela_jogadores()
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    with open("jogadores.csv", newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-
-            # >>> PATCH: data_nascimento segura
-            data_nasc = None
-            if row.get("data_nascimento"):
-                try:
-                    data_nasc = datetime.strptime(
-                        row["data_nascimento"], "%d-%m-%Y"
-                    ).date()
-                except ValueError:
-                    data_nasc = None
-            # <<< PATCH
-
-            # >>> PATCH: ano_nascimento seguro
-            ano_nasc = None
-            if row.get("ano_nascimento") and row["ano_nascimento"].isdigit():
-                ano_nasc = int(row["ano_nascimento"])
-            # <<< PATCH
-
-            cur.execute("""
-                INSERT INTO jogadores
-                (player_id, nome, data_nascimento, ano_nascimento,
-                 clube, escalao, distrito, naturalidade)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (player_id) DO NOTHING
-            """, (
-                int(row["player_id"]),
-                row["nome"],
-                data_nasc,
-                ano_nasc,
-                row["clube"],
-                row["escalao"],
-                row["distrito"],
-                row["naturalidade"]
-            ))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return "Jogadores importados ✅"
 
 # ======================================================
 # RUN
