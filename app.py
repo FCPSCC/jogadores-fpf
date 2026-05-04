@@ -1,5 +1,6 @@
 from flask import (
-    Flask, render_template, request, redirect, session, url_for
+    Flask, render_template, request, redirect,
+    session, url_for
 )
 from datetime import date
 import os
@@ -11,12 +12,18 @@ import psycopg2.extras
 # ======================================================
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "chave-temporaria-123"
+)
 
-SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
+SITE_PASSWORD = os.environ.get(
+    "SITE_PASSWORD",
+    "MUDAR123"
+)
 
 # ======================================================
-# BD
+# BASE DE DADOS
 # ======================================================
 
 def get_db():
@@ -82,7 +89,7 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# LISTAS DE FILTROS
+# LISTAS PARA FILTROS (DROPDOWNS)
 # ======================================================
 
 def obter_listas_filtros():
@@ -109,7 +116,7 @@ def obter_listas_filtros():
     return categorias, escalaoes, distritos, naturalidades
 
 # ======================================================
-# QUERY PRINCIPAL (LIMITADA)
+# QUERY PRINCIPAL (SEMPRE LIMITADA)
 # ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir, offset):
@@ -126,7 +133,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     """
     params = []
 
-    # Nome por termos (AND ILIKE)
+    # Pesquisa por nome (termos independentes)
     if f.get("nome"):
         for termo in f["nome"].split():
             query += " AND nome ILIKE %s"
@@ -148,12 +155,10 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         query += " AND naturalidade = %s"
         params.append(f["naturalidade"])
 
-    # Filtro por escalão FPF
     if f.get("escalao"):
         query += " AND escalao = %s"
         params.append(f["escalao"])
 
-    # Filtro por categoria (derivado do ano)
     if f.get("categoria") and f["categoria"].startswith("Sub-"):
         sub = int(f["categoria"].replace("Sub-", ""))
         ano_ref = obter_ano_referencia_epoca() - sub + 1
@@ -244,9 +249,9 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
+    # Dados base
     cur.execute("SELECT * FROM jogadores WHERE player_id = %s", (player_id,))
     jogador = cur.fetchone()
-
     if not jogador:
         return "Jogador não encontrado", 404
 
@@ -259,20 +264,31 @@ def ficha_jogador(player_id):
     """, (player_id,))
     zz = cur.fetchone()
 
-    # Participações (para joga acima)
+    # Histórico competitivo (participação)
     cur.execute("""
-        SELECT escalao
+        SELECT
+            modalidade,
+            clube,
+            escalao,
+            escalao_texto,
+            jogos,
+            golos
         FROM participacao_epoca_atual
         WHERE player_id = %s
+        ORDER BY escalao DESC, jogos DESC
     """, (player_id,))
-    participacoes = [r["escalao"] for r in cur.fetchall()]
+    participacao = cur.fetchall()
 
     cur.close()
     conn.close()
 
     cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = extrair_numero_escalao(cat_teorica)
-    escalao_real_max = max(participacoes) if participacoes else None
+
+    escalao_real_max = max(
+        (p["escalao"] for p in participacao),
+        default=None
+    )
 
     joga_acima = (
         escalao_teorico is not None
@@ -284,6 +300,7 @@ def ficha_jogador(player_id):
         "jogador.html",
         jogador=jogador,
         zz=zz,
+        participacao=participacao,
         escalao_teorico=escalao_teorico,
         escalao_real_max=escalao_real_max,
         joga_acima=joga_acima
