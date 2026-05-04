@@ -1,6 +1,5 @@
 from flask import (
-    Flask, render_template, request, redirect,
-    session, url_for
+    Flask, render_template, request, redirect, session, url_for
 )
 from datetime import date
 import os
@@ -12,18 +11,12 @@ import psycopg2.extras
 # ======================================================
 
 app = Flask(__name__)
-app.secret_key = os.environ.get(
-    "SECRET_KEY",
-    "chave-temporaria-123"
-)
+app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
 
-SITE_PASSWORD = os.environ.get(
-    "SITE_PASSWORD",
-    "MUDAR123"
-)
+SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
 
 # ======================================================
-# BASE DE DADOS
+# BD
 # ======================================================
 
 def get_db():
@@ -33,7 +26,7 @@ def get_db():
     )
 
 # ======================================================
-# ÉPOCA / CATEGORIA
+# ÉPOCA / CATEGORIAS
 # ======================================================
 
 def obter_ano_referencia_epoca():
@@ -43,9 +36,7 @@ def obter_ano_referencia_epoca():
 def calcular_categoria_por_ano(ano_nascimento):
     if not ano_nascimento:
         return None
-
     sub = obter_ano_referencia_epoca() - ano_nascimento + 1
-
     if sub < 5:
         return None
     if sub <= 19:
@@ -91,7 +82,7 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# LISTAS PARA FILTROS (DROPDOWNS)
+# LISTAS DE FILTROS
 # ======================================================
 
 def obter_listas_filtros():
@@ -118,10 +109,10 @@ def obter_listas_filtros():
     return categorias, escalaoes, distritos, naturalidades
 
 # ======================================================
-# QUERY PRINCIPAL (SEMPRE LIMITADA)
+# QUERY PRINCIPAL (LIMITADA)
 # ======================================================
 
-def obter_jogadores(f, sort_col, sort_dir, offset=0):
+def obter_jogadores(f, sort_col, sort_dir, offset):
     conn = get_db()
     cur = conn.cursor()
 
@@ -135,9 +126,11 @@ def obter_jogadores(f, sort_col, sort_dir, offset=0):
     """
     params = []
 
+    # Nome por termos (AND ILIKE)
     if f.get("nome"):
-        query += " AND nome ILIKE %s"
-        params.append(f"%{f['nome']}%")
+        for termo in f["nome"].split():
+            query += " AND nome ILIKE %s"
+            params.append(f"%{termo}%")
 
     if f.get("clube"):
         query += " AND clube ILIKE %s"
@@ -155,13 +148,24 @@ def obter_jogadores(f, sort_col, sort_dir, offset=0):
         query += " AND naturalidade = %s"
         params.append(f["naturalidade"])
 
+    # Filtro por escalão FPF
+    if f.get("escalao"):
+        query += " AND escalao = %s"
+        params.append(f["escalao"])
+
+    # Filtro por categoria (derivado do ano)
+    if f.get("categoria") and f["categoria"].startswith("Sub-"):
+        sub = int(f["categoria"].replace("Sub-", ""))
+        ano_ref = obter_ano_referencia_epoca() - sub + 1
+        query += " AND ano_nascimento = %s"
+        params.append(ano_ref)
+
     coluna = sort_col if sort_col in [
         "player_id", "nome", "data_nascimento",
         "clube", "escalao", "ano_nascimento"
     ] else "player_id"
 
     direcao = "ASC" if sort_dir == "asc" else "DESC"
-
     query += f" ORDER BY {coluna} {direcao} LIMIT 100 OFFSET %s"
     params.append(offset)
 
@@ -175,20 +179,20 @@ def obter_jogadores(f, sort_col, sort_dir, offset=0):
     for r in rows:
         categoria = calcular_categoria_por_ano(r["ano_nascimento"])
         jogadores.append((
-            r["player_id"],          # 0
-            r["nome"],               # 1
-            r["data_nascimento"],    # 2
-            r["clube"],              # 3
-            r["escalao"],            # 4
-            categoria,               # 5 categoria teórica
-            r["distrito"],           # 6
-            r["naturalidade"]        # 7
+            r["player_id"],        # 0
+            r["nome"],             # 1
+            r["data_nascimento"],  # 2
+            r["clube"],            # 3
+            r["escalao"],          # 4
+            categoria,             # 5
+            r["distrito"],         # 6
+            r["naturalidade"]      # 7
         ))
 
     return jogadores
 
 # ======================================================
-# INDEX (SEM OOM)
+# INDEX
 # ======================================================
 
 @app.route("/")
@@ -201,7 +205,9 @@ def index():
         "clube": request.args.get("clube", "").strip(),
         "ano_nasc": request.args.get("ano_nasc", "").strip(),
         "distrito": request.args.get("distrito", "").strip(),
-        "naturalidade": request.args.get("naturalidade", "").strip()
+        "naturalidade": request.args.get("naturalidade", "").strip(),
+        "categoria": request.args.get("categoria", "").strip(),
+        "escalao": request.args.get("escalao_fpf", "").strip()
     }
 
     sort_col = request.args.get("sort", "player_id")
@@ -210,9 +216,7 @@ def index():
     offset = page * 100
 
     jogadores = []
-    tem_filtros = any(v for v in f.values())
-
-    if tem_filtros:
+    if any(v for v in f.values()):
         jogadores = obter_jogadores(f, sort_col, sort_dir, offset)
 
     categorias, escalaoes, distritos, naturalidades = obter_listas_filtros()
@@ -229,7 +233,7 @@ def index():
     )
 
 # ======================================================
-# FICHA INDIVIDUAL
+# FICHA DO JOGADOR
 # ======================================================
 
 @app.route("/jogador/<int:player_id>")
@@ -246,6 +250,16 @@ def ficha_jogador(player_id):
     if not jogador:
         return "Jogador não encontrado", 404
 
+    # ZeroZero
+    cur.execute("""
+        SELECT jogos, golos, competicao, epoca,
+               ultima_atualizacao, zz_player_url, foto_url
+        FROM estatisticas_zerozero
+        WHERE player_id = %s
+    """, (player_id,))
+    zz = cur.fetchone()
+
+    # Participações (para joga acima)
     cur.execute("""
         SELECT escalao
         FROM participacao_epoca_atual
@@ -269,6 +283,7 @@ def ficha_jogador(player_id):
     return render_template(
         "jogador.html",
         jogador=jogador,
+        zz=zz,
         escalao_teorico=escalao_teorico,
         escalao_real_max=escalao_real_max,
         joga_acima=joga_acima
