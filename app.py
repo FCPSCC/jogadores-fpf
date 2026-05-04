@@ -1,6 +1,6 @@
 from flask import (
     Flask, render_template, request, redirect,
-    session, url_for, Response
+    session, url_for
 )
 from datetime import date
 import os
@@ -12,9 +12,15 @@ import psycopg2.extras
 # ======================================================
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "chave-temporaria-123"
+)
 
-SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
+SITE_PASSWORD = os.environ.get(
+    "SITE_PASSWORD",
+    "MUDAR123"
+)
 
 # ======================================================
 # BASE DE DADOS
@@ -27,7 +33,7 @@ def get_db():
     )
 
 # ======================================================
-# APOIO
+# ÉPOCA / CATEGORIA
 # ======================================================
 
 def obter_ano_referencia_epoca():
@@ -37,7 +43,9 @@ def obter_ano_referencia_epoca():
 def calcular_categoria_por_ano(ano_nascimento):
     if not ano_nascimento:
         return None
+
     sub = obter_ano_referencia_epoca() - ano_nascimento + 1
+
     if sub < 5:
         return None
     if sub <= 19:
@@ -53,19 +61,14 @@ def ordem_escaloes_fpf(txt):
     if not txt:
         return 99
     t = txt.lower()
-    ordem = [
-        ("petiz", 1),
-        ("traquina", 2),
-        ("benjamim", 3),
-        ("infantil", 4),
-        ("iniciado", 5),
-        ("juvenil", 6),
-        ("junior", 7),
-        ("sénior", 8),
-    ]
-    for k, v in ordem:
-        if k in t:
-            return v
+    if "petiz" in t: return 1
+    if "traquina" in t: return 2
+    if "benjamim" in t: return 3
+    if "infantil" in t: return 4
+    if "iniciado" in t: return 5
+    if "juvenil" in t: return 6
+    if "junior" in t or "júnior" in t: return 7
+    if "senior" in t or "sénior" in t: return 8
     return 99
 
 # ======================================================
@@ -110,10 +113,12 @@ def obter_listas_filtros():
     cur.close()
     conn.close()
 
-    return escalaoes, distritos, naturalidades
+    categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
+
+    return categorias, escalaoes, distritos, naturalidades
 
 # ======================================================
-# QUERY PRINCIPAL (SEMPRE COM LIMIT)
+# QUERY PRINCIPAL (SEMPRE LIMITADA)
 # ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir, offset=0):
@@ -150,10 +155,10 @@ def obter_jogadores(f, sort_col, sort_dir, offset=0):
         query += " AND naturalidade = %s"
         params.append(f["naturalidade"])
 
-    coluna = sort_col if sort_col in {
+    coluna = sort_col if sort_col in [
         "player_id", "nome", "data_nascimento",
         "clube", "escalao", "ano_nascimento"
-    } else "player_id"
+    ] else "player_id"
 
     direcao = "ASC" if sort_dir == "asc" else "DESC"
 
@@ -169,15 +174,21 @@ def obter_jogadores(f, sort_col, sort_dir, offset=0):
     jogadores = []
     for r in rows:
         categoria = calcular_categoria_por_ano(r["ano_nascimento"])
-        jogadores.append({
-            **r,
-            "categoria_teorica": categoria
-        })
+        jogadores.append((
+            r["player_id"],          # 0
+            r["nome"],               # 1
+            r["data_nascimento"],    # 2
+            r["clube"],              # 3
+            r["escalao"],            # 4
+            categoria,               # 5 categoria teórica
+            r["distrito"],           # 6
+            r["naturalidade"]        # 7
+        ))
 
     return jogadores
 
 # ======================================================
-# INDEX
+# INDEX (SEM OOM)
 # ======================================================
 
 @app.route("/")
@@ -186,11 +197,11 @@ def index():
         return redirect("/login")
 
     f = {
-        "nome": request.args.get("nome", ""),
-        "clube": request.args.get("clube", ""),
-        "ano_nasc": request.args.get("ano_nasc", ""),
-        "distrito": request.args.get("distrito", ""),
-        "naturalidade": request.args.get("naturalidade", "")
+        "nome": request.args.get("nome", "").strip(),
+        "clube": request.args.get("clube", "").strip(),
+        "ano_nasc": request.args.get("ano_nasc", "").strip(),
+        "distrito": request.args.get("distrito", "").strip(),
+        "naturalidade": request.args.get("naturalidade", "").strip()
     }
 
     sort_col = request.args.get("sort", "player_id")
@@ -199,15 +210,18 @@ def index():
     offset = page * 100
 
     jogadores = []
-    if any(f.values()):
+    tem_filtros = any(v for v in f.values())
+
+    if tem_filtros:
         jogadores = obter_jogadores(f, sort_col, sort_dir, offset)
 
-    escalaoes, distritos, naturalidades = obter_listas_filtros()
+    categorias, escalaoes, distritos, naturalidades = obter_listas_filtros()
 
     return render_template(
         "index.html",
         jogadores=jogadores,
         filtros=f,
+        categorias=categorias,
         escalaoes_fpf=escalaoes,
         distritos=distritos,
         naturalidades=naturalidades,
@@ -215,7 +229,7 @@ def index():
     )
 
 # ======================================================
-# FICHA DO JOGADOR
+# FICHA INDIVIDUAL
 # ======================================================
 
 @app.route("/jogador/<int:player_id>")
