@@ -6,21 +6,16 @@ from datetime import date
 import os
 import psycopg2
 import psycopg2.extras
+import re
 
 # ======================================================
 # APP
 # ======================================================
 
 app = Flask(__name__)
-app.secret_key = os.environ.get(
-    "SECRET_KEY",
-    "chave-temporaria-123"
-)
+app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
 
-SITE_PASSWORD = os.environ.get(
-    "SITE_PASSWORD",
-    "MUDAR123"
-)
+SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
 
 # ======================================================
 # BASE DE DADOS
@@ -70,6 +65,19 @@ def ordem_escaloes_fpf(txt):
     return 99
 
 # ======================================================
+# NORMALIZAÇÃO DE ESCALÕES FPF
+# ======================================================
+
+def normalizar_escalao(txt):
+    """
+    Normaliza escalões para o formato FPF:
+    Junior-G (Petiz) -> Junior-G(Petiz)
+    """
+    if not txt:
+        return txt
+    return re.sub(r"\s+\(", "(", txt)
+
+# ======================================================
 # LOGIN
 # ======================================================
 
@@ -89,7 +97,7 @@ def logout():
     return redirect("/login")
 
 # ======================================================
-# LISTAS PARA FILTROS (DROPDOWNS)
+# LISTAS PARA FILTROS
 # ======================================================
 
 def obter_listas_filtros():
@@ -97,8 +105,11 @@ def obter_listas_filtros():
     cur = conn.cursor()
 
     cur.execute("SELECT DISTINCT escalao FROM jogadores WHERE escalao IS NOT NULL")
+    escalaoes_raw = [r["escalao"] for r in cur.fetchall()]
+
+    # ✅ normalização + deduplicação
     escalaoes = sorted(
-        [r["escalao"] for r in cur.fetchall()],
+        list({normalizar_escalao(e) for e in escalaoes_raw}),
         key=ordem_escaloes_fpf
     )
 
@@ -116,7 +127,7 @@ def obter_listas_filtros():
     return categorias, escalaoes, distritos, naturalidades
 
 # ======================================================
-# QUERY PRINCIPAL (SEMPRE LIMITADA)
+# QUERY PRINCIPAL (SEMPRE COM LIMIT)
 # ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir, offset):
@@ -133,7 +144,6 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     """
     params = []
 
-    # Pesquisa por nome (termos independentes)
     if f.get("nome"):
         for termo in f["nome"].split():
             query += " AND nome ILIKE %s"
@@ -156,7 +166,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         params.append(f["naturalidade"])
 
     if f.get("escalao"):
-        query += " AND escalao = %s"
+        query += " AND REPLACE(escalao, ' (', '(') = %s"
         params.append(f["escalao"])
 
     if f.get("categoria") and f["categoria"].startswith("Sub-"):
@@ -184,14 +194,14 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     for r in rows:
         categoria = calcular_categoria_por_ano(r["ano_nascimento"])
         jogadores.append((
-            r["player_id"],        # 0
-            r["nome"],             # 1
-            r["data_nascimento"],  # 2
-            r["clube"],            # 3
-            r["escalao"],          # 4
-            categoria,             # 5
-            r["distrito"],         # 6
-            r["naturalidade"]      # 7
+            r["player_id"],
+            r["nome"],
+            r["data_nascimento"],
+            r["clube"],
+            normalizar_escalao(r["escalao"]),
+            categoria,
+            r["distrito"],
+            r["naturalidade"]
         ))
 
     return jogadores
@@ -249,13 +259,11 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
-    # Dados base
     cur.execute("SELECT * FROM jogadores WHERE player_id = %s", (player_id,))
     jogador = cur.fetchone()
     if not jogador:
         return "Jogador não encontrado", 404
 
-    # ZeroZero
     cur.execute("""
         SELECT jogos, golos, competicao, epoca,
                ultima_atualizacao, zz_player_url, foto_url
@@ -264,15 +272,8 @@ def ficha_jogador(player_id):
     """, (player_id,))
     zz = cur.fetchone()
 
-    # Histórico competitivo (participação)
     cur.execute("""
-        SELECT
-            modalidade,
-            clube,
-            escalao,
-            escalao_texto,
-            jogos,
-            golos
+        SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
         FROM participacao_epoca_atual
         WHERE player_id = %s
         ORDER BY escalao DESC, jogos DESC
