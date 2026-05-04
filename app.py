@@ -4,18 +4,24 @@ from flask import (
 )
 from datetime import date
 import os
+import re
 import psycopg2
 import psycopg2.extras
-import re
 
 # ======================================================
 # APP
 # ======================================================
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "chave-temporaria-123"
+)
 
-SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
+SITE_PASSWORD = os.environ.get(
+    "SITE_PASSWORD",
+    "MUDAR123"
+)
 
 # ======================================================
 # BASE DE DADOS
@@ -65,16 +71,13 @@ def ordem_escaloes_fpf(txt):
     return 99
 
 # ======================================================
-# NORMALIZAÇÃO DE ESCALÕES FPF
+# NORMALIZAÇÃO DE ESCALÃO FPF
 # ======================================================
 
 def normalizar_escalao(txt):
-    """
-    Normaliza escalões para o formato FPF:
-    Junior-G (Petiz) -> Junior-G(Petiz)
-    """
     if not txt:
         return txt
+    # remove espaço antes do parêntesis
     return re.sub(r"\s+\(", "(", txt)
 
 # ======================================================
@@ -107,16 +110,25 @@ def obter_listas_filtros():
     cur.execute("SELECT DISTINCT escalao FROM jogadores WHERE escalao IS NOT NULL")
     escalaoes_raw = [r["escalao"] for r in cur.fetchall()]
 
-    # ✅ normalização + deduplicação
     escalaoes = sorted(
         list({normalizar_escalao(e) for e in escalaoes_raw}),
         key=ordem_escaloes_fpf
     )
 
-    cur.execute("SELECT DISTINCT distrito FROM jogadores WHERE distrito IS NOT NULL ORDER BY distrito")
+    cur.execute("""
+        SELECT DISTINCT distrito
+        FROM jogadores
+        WHERE distrito IS NOT NULL
+        ORDER BY distrito
+    """)
     distritos = [r["distrito"] for r in cur.fetchall()]
 
-    cur.execute("SELECT DISTINCT naturalidade FROM jogadores WHERE naturalidade IS NOT NULL ORDER BY naturalidade")
+    cur.execute("""
+        SELECT DISTINCT naturalidade
+        FROM jogadores
+        WHERE naturalidade IS NOT NULL
+        ORDER BY naturalidade
+    """)
     naturalidades = [r["naturalidade"] for r in cur.fetchall()]
 
     cur.close()
@@ -127,64 +139,80 @@ def obter_listas_filtros():
     return categorias, escalaoes, distritos, naturalidades
 
 # ======================================================
-# QUERY PRINCIPAL (SEMPRE COM LIMIT)
+# QUERY PRINCIPAL (LISTAGEM + TOTAL)
 # ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir, offset):
     conn = get_db()
     cur = conn.cursor()
 
-    query = """
-        SELECT
-            player_id, nome, data_nascimento,
-            clube, escalao, ano_nascimento,
-            distrito, naturalidade
-        FROM jogadores
-        WHERE 1=1
-    """
+    base_where = " WHERE 1=1 "
+    filtros_sql = ""
     params = []
 
+    # Nome por termos
     if f.get("nome"):
         for termo in f["nome"].split():
-            query += " AND nome ILIKE %s"
+            filtros_sql += " AND nome ILIKE %s"
             params.append(f"%{termo}%")
 
     if f.get("clube"):
-        query += " AND clube ILIKE %s"
+        filtros_sql += " AND clube ILIKE %s"
         params.append(f"%{f['clube']}%")
 
     if f.get("ano_nasc"):
-        query += " AND ano_nascimento = %s"
+        filtros_sql += " AND ano_nascimento = %s"
         params.append(int(f["ano_nasc"]))
 
     if f.get("distrito"):
-        query += " AND distrito = %s"
+        filtros_sql += " AND distrito = %s"
         params.append(f["distrito"])
 
     if f.get("naturalidade"):
-        query += " AND naturalidade = %s"
+        filtros_sql += " AND naturalidade = %s"
         params.append(f["naturalidade"])
 
     if f.get("escalao"):
-        query += " AND REPLACE(escalao, ' (', '(') = %s"
+        filtros_sql += " AND REPLACE(escalao, ' (', '(') = %s"
         params.append(f["escalao"])
 
     if f.get("categoria") and f["categoria"].startswith("Sub-"):
         sub = int(f["categoria"].replace("Sub-", ""))
         ano_ref = obter_ano_referencia_epoca() - sub + 1
-        query += " AND ano_nascimento = %s"
+        filtros_sql += " AND ano_nascimento = %s"
         params.append(ano_ref)
 
+    # TOTAL (sem LIMIT)
+    count_query = "SELECT COUNT(*) AS total FROM jogadores" + base_where + filtros_sql
+    cur.execute(count_query, params)
+    total = cur.fetchone()["total"]
+
+    # ORDENAÇÃO
     coluna = sort_col if sort_col in [
         "player_id", "nome", "data_nascimento",
         "clube", "escalao", "ano_nascimento"
     ] else "player_id"
 
     direcao = "ASC" if sort_dir == "asc" else "DESC"
-    query += f" ORDER BY {coluna} {direcao} LIMIT 100 OFFSET %s"
-    params.append(offset)
 
-    cur.execute(query, params)
+    if coluna == "clube":
+        order_clause = f" ORDER BY LOWER(clube) {direcao}"
+    else:
+        order_clause = f" ORDER BY {coluna} {direcao}"
+
+    # QUERY PRINCIPAL COM LIMIT
+    query = f"""
+        SELECT
+            player_id, nome, data_nascimento,
+            clube, escalao, ano_nascimento,
+            distrito, naturalidade
+        FROM jogadores
+        {base_where}
+        {filtros_sql}
+        {order_clause}
+        LIMIT 100 OFFSET %s
+    """
+    cur.execute(query, params + [offset])
     rows = cur.fetchall()
 
     cur.close()
@@ -194,7 +222,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     for r in rows:
         categoria = calcular_categoria_por_ano(r["ano_nascimento"])
         jogadores.append((
-            r["player_id"],
+            r["player_id"],                # ID
             r["nome"],
             r["data_nascimento"],
             r["clube"],
@@ -204,7 +232,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
             r["naturalidade"]
         ))
 
-    return jogadores
+    return jogadores, total
 
 # ======================================================
 # INDEX
@@ -231,14 +259,17 @@ def index():
     offset = page * 100
 
     jogadores = []
+    total = 0
+
     if any(v for v in f.values()):
-        jogadores = obter_jogadores(f, sort_col, sort_dir, offset)
+        jogadores, total = obter_jogadores(f, sort_col, sort_dir, offset)
 
     categorias, escalaoes, distritos, naturalidades = obter_listas_filtros()
 
     return render_template(
         "index.html",
         jogadores=jogadores,
+        total=total,
         filtros=f,
         categorias=categorias,
         escalaoes_fpf=escalaoes,
@@ -259,11 +290,13 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
+    # Dados base
     cur.execute("SELECT * FROM jogadores WHERE player_id = %s", (player_id,))
     jogador = cur.fetchone()
     if not jogador:
         return "Jogador não encontrado", 404
 
+    # ZeroZero
     cur.execute("""
         SELECT jogos, golos, competicao, epoca,
                ultima_atualizacao, zz_player_url, foto_url
@@ -272,8 +305,10 @@ def ficha_jogador(player_id):
     """, (player_id,))
     zz = cur.fetchone()
 
+    # Histórico competitivo
     cur.execute("""
-        SELECT modalidade, clube, escalao, escalao_texto, jogos, golos
+        SELECT modalidade, clube, escalao,
+               escalao_texto, jogos, golos
         FROM participacao_epoca_atual
         WHERE player_id = %s
         ORDER BY escalao DESC, jogos DESC
