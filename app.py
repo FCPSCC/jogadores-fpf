@@ -280,8 +280,31 @@ def ficha_jogador(player_id):
         SELECT epoca, competicao, jogos, golos
         FROM vw_atleta_zerozero_historico
         WHERE player_id = %s
+        ORDER BY epoca DESC, competicao
     """, (player_id,))
-    historico_zz = cur.fetchall()
+    rows = cur.fetchall()
+
+    # ✅ FORMATAR COMO TU QUERES
+    historico_formatado = []
+    epoca_anterior = None
+
+for row in rows:
+    epoca = row["epoca"]
+
+    if epoca != epoca_anterior:
+        epoca_mostrar = epoca
+        epoca_anterior = epoca
+    else:
+        epoca_mostrar = ""
+
+    historico_formatado.append({
+        "epoca": epoca_mostrar,
+        "competicao": row["competicao"],
+        "jogos": row["jogos"],
+        "golos": row["golos"]
+    })
+
+
 
     # Participação FPF
     cur.execute("""
@@ -318,7 +341,7 @@ def ficha_jogador(player_id):
         jogador=jogador,
         zz=zz,
         resumo_zz=resumo_zz,
-        historico_zz=historico_zz,
+         historico_zz=historico_formatado,
         participacao=participacao,
         escalao_teorico=escalao_teorico,
         escalao_real_max=escalao_real_max,
