@@ -124,7 +124,16 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         params.append(f["escalao"])
 
     if f.get("acima_escalao") == "1":
-        filtros_sql += " AND player_id IN (SELECT player_id FROM participacao_epoca_atual)"
+    filtros_sql += """
+        AND player_id IN (
+            SELECT m.player_id_fpf
+            FROM estatisticas_zerozero e
+            JOIN match_zerozero_fpf m
+                ON e.player_id = m.id_zerozero_atleta
+            WHERE e.epoca = '2025/26'
+        )
+    """
+
 
     cur.execute(
         "SELECT COUNT(*) AS total FROM jogadores" + base_where + filtros_sql,
@@ -233,11 +242,15 @@ def ficha_jogador(player_id):
     """, (player_id,))
     rows = cur.fetchall()
 
+tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
+
+
     cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = extrair_numero_escalao(cat_teorica)
 
     historico_formatado = []
     epoca_anterior = None
+
 
     for row in rows:
         epoca = row["epoca"]
@@ -276,7 +289,13 @@ def ficha_jogador(player_id):
     return render_template(
         "jogador.html",
         jogador=jogador,
-        historico_zz=historico_formatado
+        historico_zz=historico_formatado,
+        participacao=participacao,
+        escalao_teorico=escalao_teorico,
+        escalao_real_max=escalao_real_max,
+        joga_acima=joga_acima,
+        tem_epoca_atual=tem_epoca_atual
+)
     )
 
 # ======================================================
