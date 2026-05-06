@@ -260,12 +260,14 @@ def ficha_jogador(player_id):
     if not jogador:
         return "Jogador não encontrado", 404
 
-    cur.execute("""
-        SELECT jogos, golos, competicao, epoca,
-               ultima_atualizacao, zz_player_url, foto_url
-        FROM estatisticas_zerozero
-        WHERE player_id = %s
-    """, (jogador["id_zerozero_atleta"],))
+   cur.execute("""
+        SELECT e.jogos, e.golos, e.competicao, e.epoca,
+           e.ultima_atualizacao, e.zz_player_url, e.foto_url
+        FROM estatisticas_zerozero e
+        JOIN match_zerozero_fpf m
+        ON e.player_id = m.id_zerozero_atleta
+        WHERE m.player_id_fpf = %s
+    """, (player_id,))
     zz = cur.fetchall()
 
     cur.execute("""
@@ -274,8 +276,6 @@ def ficha_jogador(player_id):
         WHERE player_id = %s
     """, (player_id,))
     resumo_zz = cur.fetchall()
-
-# FIX FINAL ZZ LINK
 
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
