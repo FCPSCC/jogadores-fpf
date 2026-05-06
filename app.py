@@ -124,7 +124,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         params.append(f["escalao"])
 
     if f.get("acima_escalao") == "1":
-    filtros_sql += """
+        filtros_sql += """
         AND player_id IN (
             SELECT m.player_id_fpf
             FROM estatisticas_zerozero e
