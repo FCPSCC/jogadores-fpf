@@ -80,6 +80,74 @@ def logout():
     session.clear()
     return redirect("/login")
 
+def obter_jogadores(f, sort_col, sort_dir, offset):
+    conn = get_db()
+    cur = conn.cursor()
+
+    base_where = " WHERE 1=1 "
+    filtros_sql = ""
+    params = []
+
+    if f.get("nome"):
+        for termo in f["nome"].split():
+            filtros_sql += " AND nome ILIKE %s"
+            params.append(f"%{termo}%")
+
+    if f.get("clube"):
+        filtros_sql += " AND clube ILIKE %s"
+        params.append(f"%{f['clube']}%")
+
+    if f.get("ano_nasc"):
+        filtros_sql += " AND ano_nascimento = %s"
+        params.append(int(f["ano_nasc"]))
+
+    if f.get("distrito"):
+        filtros_sql += " AND distrito = %s"
+        params.append(f["distrito"])
+
+    if f.get("naturalidade"):
+        filtros_sql += " AND naturalidade = %s"
+        params.append(f["naturalidade"])
+
+    if f.get("escalao"):
+        filtros_sql += " AND escalao = %s"
+        params.append(f["escalao"])
+
+    # TOTAL
+    cur.execute(
+        "SELECT COUNT(*) AS total FROM jogadores" + base_where + filtros_sql,
+        params
+    )
+    total = cur.fetchone()["total"]
+
+    # ORDENAÇÃO
+    coluna = sort_col if sort_col in [
+        "player_id", "nome", "data_nascimento",
+        "clube", "escalao", "ano_nascimento"
+    ] else "player_id"
+
+    direcao = "ASC" if sort_dir == "asc" else "DESC"
+
+    query = f"""
+        SELECT
+            player_id, nome, data_nascimento,
+            clube, escalao, ano_nascimento,
+            distrito, naturalidade
+        FROM jogadores
+        {base_where}
+        {filtros_sql}
+        ORDER BY {coluna} {direcao}
+        LIMIT 100 OFFSET %s
+    """
+
+    cur.execute(query, params + [offset])
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return rows, total
+
 def obter_listas_filtros():
     conn = get_db()
     cur = conn.cursor()
