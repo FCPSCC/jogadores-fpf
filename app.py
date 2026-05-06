@@ -41,6 +41,7 @@ def obter_ano_referencia_epoca():
     hoje = date.today()
     return hoje.year if hoje.month >= 7 else hoje.year - 1
 
+
 def calcular_categoria_por_ano(ano_nascimento):
     if not ano_nascimento:
         return None
@@ -51,15 +52,18 @@ def calcular_categoria_por_ano(ano_nascimento):
         return f"Sub-{sub}"
     return "Sénior"
 
+
 def extrair_numero_escalao(cat):
     if cat and cat.startswith("Sub-"):
         return int(cat.replace("Sub-", ""))
     return None
 
+
 def normalizar_escalao(txt):
     if not txt:
         return txt
     return re.sub(r"\s+\(", "(", txt)
+
 
 # ======================================================
 # LOGIN
@@ -75,10 +79,12 @@ def login():
         erro = "Password incorreta"
     return render_template("login.html", erro=erro)
 
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
+
 
 # ======================================================
 # OBTER JOGADORES
@@ -125,15 +131,14 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     if f.get("acima_escalao") == "1":
         filtros_sql += """
-        AND player_id IN (
-            SELECT m.player_id_fpf
-            FROM estatisticas_zerozero e
-            JOIN match_zerozero_fpf m
-                ON e.player_id = m.id_zerozero_atleta
-            WHERE e.epoca = '2025/26'
-        )
-    """
-
+            AND player_id IN (
+                SELECT m.player_id_fpf
+                FROM estatisticas_zerozero e
+                JOIN match_zerozero_fpf m
+                    ON e.player_id = m.id_zerozero_atleta
+                WHERE e.epoca = '2025/26'
+            )
+        """
 
     cur.execute(
         "SELECT COUNT(*) AS total FROM jogadores" + base_where + filtros_sql,
@@ -174,6 +179,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     return jogadores, total
 
+
 # ======================================================
 # INDEX
 # ======================================================
@@ -211,8 +217,9 @@ def index():
         page=page
     )
 
+
 # ======================================================
-# FICHA DO JOGADOR (CORRIGIDA)
+# FICHA DO JOGADOR
 # ======================================================
 
 @app.route("/jogador/<int:player_id>")
@@ -223,15 +230,16 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
+    # Jogador
     cur.execute(
         "SELECT * FROM jogadores WHERE player_id = %s",
         (player_id,)
     )
     jogador = cur.fetchone()
-
     if not jogador:
         return "Jogador não encontrado", 404
 
+    # Histórico ZZ
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
@@ -242,15 +250,14 @@ def ficha_jogador(player_id):
     """, (player_id,))
     rows = cur.fetchall()
 
-tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
-
+    # Flag época atual
+    tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
 
     cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = extrair_numero_escalao(cat_teorica)
 
     historico_formatado = []
     epoca_anterior = None
-
 
     for row in rows:
         epoca = row["epoca"]
@@ -268,10 +275,10 @@ tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
 
         acima = False
         if (
-            epoca == "2025/26"
-            and escalao_encontrado is not None
-            and escalao_teorico is not None
-            and escalao_encontrado > escalao_teorico
+            epoca == "2025/26" and
+            escalao_encontrado is not None and
+            escalao_teorico is not None and
+            escalao_encontrado > escalao_teorico
         ):
             acima = True
 
@@ -290,12 +297,10 @@ tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
         "jogador.html",
         jogador=jogador,
         historico_zz=historico_formatado,
-        participacao=participacao,
         escalao_teorico=escalao_teorico,
-        escalao_real_max=escalao_real_max,
-        joga_acima=joga_acima,
         tem_epoca_atual=tem_epoca_atual
     )
+
 
 # ======================================================
 # RUN
