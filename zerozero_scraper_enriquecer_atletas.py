@@ -4,7 +4,6 @@ import os
 import re
 import time
 import psycopg2
-
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
@@ -16,14 +15,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.firefox import GeckoDriverManager
 
 # ======================================================
-# CONFIGURAÇÃO
+# CONFIG
 # ======================================================
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 FIREFOX_BINARY = r"C:\Users\augusto.roxo\AppData\Local\Mozilla Firefox\firefox.exe"
 
-WAIT_TIMEOUT = 15
-DELAY = 0.8
+WAIT_TIMEOUT = 10
+DELAY = 1
 
 # ======================================================
 # BD
@@ -31,102 +30,161 @@ DELAY = 0.8
 
 def obter_atletas(conn, limite=None):
     cur = conn.cursor()
+
     sql = """
-        SELECT
-            id_zerozero_atleta,
-            nome_completo,
-            url_zerozero
-        FROM zerozero_atleta
-        ORDER BY id_zerozero_atleta
+    SELECT id_zerozero_atleta, url_zerozero
+    FROM zerozero_atleta
+    WHERE ultima_atualizacao IS NULL
+       OR ultima_atualizacao < NOW() - INTERVAL '1 day'
+    ORDER BY ultima_atualizacao NULLS FIRST
     """
+
     if limite:
         sql += " LIMIT %s"
         cur.execute(sql, (limite,))
     else:
         cur.execute(sql)
+
     return cur.fetchall()
 
-def atualizar_nome_atleta(conn, atleta_id, nome):
+def marcar_atualizado(conn, atleta_id):
     cur = conn.cursor()
     cur.execute("""
         UPDATE zerozero_atleta
-        SET nome_completo = %s
+        SET ultima_atualizacao = NOW()
         WHERE id_zerozero_atleta = %s
-    """, (nome, atleta_id))
+    """, (atleta_id,))
+
+
+def limpar_estatisticas(conn, atleta_id):
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM estatisticas_zerozero WHERE player_id = %s",
+        (atleta_id,)
+    )
+
+
+def inserir(conn, d):
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO estatisticas_zerozero
+        (player_id, epoca, competicao, jogos, golos)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        d["player_id"],
+        d["epoca"],
+        d["competicao"],
+        d["jogos"],
+        d["golos"]
+    ))
 
 # ======================================================
-# FIREFOX
+# DRIVER
 # ======================================================
 
 def criar_driver():
     opts = Options()
     opts.add_argument("--headless")
     opts.binary_location = FIREFOX_BINARY
+
     service = Service(GeckoDriverManager().install())
     return webdriver.Firefox(service=service, options=opts)
 
 # ======================================================
-# UTILITÁRIOS
+# EXTRAÇÃO CORRETA
 # ======================================================
 
-def nome_precisa_enriquecimento(nome):
-    if not nome:
-        return True
-    if nome.isdigit():
-        return True
-    if len(nome.split()) <= 2:
-        return True
-    return False
-
-def extrair_nome_completo(html):
+def extrair_estatisticas(driver, player_id):
+    html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
 
-    # 1️⃣ DADOS PESSOAIS → Nome (canónico)
-    bio = soup.find("div", class_="card-data bio")
-    if bio:
-        for row in bio.find_all("div", class_="card-data__row"):
-            label = row.find("span", class_="card-data__label")
-            value = row.find("span", class_="card-data__value")
-            if label and value and label.get_text(strip=True) == "Nome":
-                return value.get_text(strip=True)
+    # ✅ 👉 CONTAINER EXATO QUE ENVIASTE
+    container = soup.select_one("#coach_career")
 
-    # 2️⃣ FAQ → “O nome completo é …”
-    faq = soup.find("div", class_="faq answer")
-    if faq:
-        text = faq.get_text(" ", strip=True)
-        m = re.search(r"nome completo é (.+)", text, re.IGNORECASE)
-        if m:
-            return m.group(1).strip().rstrip(".")
+    if not container:
+        print("❌ container #coach_career não encontrado")
+        return []
 
-    # 3️⃣ H1 canónico
-    h1 = soup.find("h1", class_="zz-name")
-    if h1:
-        return h1.get_text(strip=True)
+    tabela = container.select_one("table.career")
 
-    h1_schema = soup.find("h1", itemprop="name")
-    if h1_schema:
-        return h1_schema.get_text(strip=True)
+    if not tabela:
+        print("❌ tabela career não encontrada")
+        return []
 
-    # 4️⃣ OpenGraph
-    meta = soup.find("meta", property="og:title")
-    if meta and meta.get("content"):
-        return meta["content"].replace(" :: ZeroZero", "").strip()
+    rows = tabela.select("tbody tr")
 
-    return None
+    epoca_atual = None
+    dados = []
+
+    for row in rows:
+        cols = row.find_all("td")
+
+        if len(cols) < 4:
+            continue
+
+        # ✅ coluna da época
+        epoca = cols[1].get_text(strip=True)
+
+        if epoca:
+            epoca_atual = epoca
+
+        if not epoca_atual:
+            continue
+
+        # ✅ equipa + escalão
+        equipa = cols[2].get_text(" ", strip=True)
+
+        # ✅ jogos e golos
+        jogos = cols[3].get_text(strip=True)
+        golos = cols[4].get_text(strip=True)
+
+        jogos = None if jogos in ["-", ""] else int(jogos)
+        golos = None if golos in ["-", ""] else int(golos)
+
+        dados.append({
+            "player_id": player_id,
+            "epoca": epoca_atual,
+            "competicao": equipa,
+            "jogos": jogos,
+            "golos": golos
+        })
+
+    return dados
 
 # ======================================================
-# SCRAPER
+# PROCESSAR ATLETA
 # ======================================================
 
-def enriquecer_atleta(driver, atleta_id, url):
+def processar_atleta(driver, conn, atleta_id, url):
     print(f"🔍 Atleta {atleta_id}")
+
     driver.get(url)
 
-    WebDriverWait(driver, WAIT_TIMEOUT).until(
-        EC.presence_of_element_located((By.TAG_NAME, "body"))
-    )
+    try:
+        WebDriverWait(driver, WAIT_TIMEOUT).until(
+            EC.presence_of_element_located((By.ID, "coach_career"))
+        )
+    except:
+        print("❌ página não carregou corretamente")
+        return
 
-    return extrair_nome_completo(driver.page_source)
+    time.sleep(1)
+
+    dados = extrair_estatisticas(driver, atleta_id)
+
+    if not dados:
+        print("⚠️ Sem dados")
+        return
+
+    limpar_estatisticas(conn, atleta_id)
+
+    for d in dados:
+        inserir(conn, d)
+
+    conn.commit()
+
+    print(f"✅ {len(dados)} registos inseridos")
 
 # ======================================================
 # MAIN
@@ -139,37 +197,19 @@ def main():
     driver = criar_driver()
 
     atletas = obter_atletas(conn)
-    print(f"✅ Atletas a verificar: {len(atletas)}")
 
-    atualizados = 0
-
-    for atleta_id, nome_atual, url in atletas:
-        if not nome_precisa_enriquecimento(nome_atual):
-            continue
-
+    for atleta_id, url in atletas:
         try:
-            nome_correto = enriquecer_atleta(driver, atleta_id, url)
-
-            if nome_correto:
-                atualizar_nome_atleta(conn, atleta_id, nome_correto)
-                conn.commit()
-                atualizados += 1
-                print(f"   ✅ {nome_correto}")
-            else:
-                print("⚠️ Nome completo não disponível publicamente")
-                conn.rollback()
-
+            processar_atleta(driver, conn, atleta_id, url)
+            marcar_atualizado(conn, atleta_id)
+            time.sleep(DELAY)
         except Exception as e:
+            print(f"❌ erro {atleta_id}: {e}")
             conn.rollback()
-            print(f"❌ Erro no atleta {atleta_id}: {e}")
-
-        time.sleep(DELAY)
 
     driver.quit()
     conn.close()
 
-    print("\n✅ Enriquecimento concluído")
-    print(f"Atletas atualizados: {atualizados}")
 
 if __name__ == "__main__":
     main()

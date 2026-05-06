@@ -119,6 +119,21 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         filtros_sql += " AND escalao = %s"
         params.append(f["escalao"])
 
+    if f.get("acima_escalao") == "1":
+    filtros_sql += """
+        AND player_id IN (
+            SELECT player_id
+            FROM participacao_epoca_atual
+            WHERE epoca = '2025/2026'
+            GROUP BY player_id
+            HAVING MAX(escalao) >
+                   MAX(escalao_teorico)
+        )
+    """
+
+    params.append(obter_ano_referencia_epoca())
+
+
     # TOTAL
     cur.execute(
         "SELECT COUNT(*) AS total FROM jogadores" + base_where + filtros_sql,
@@ -210,6 +225,8 @@ def index():
         "naturalidade": request.args.get("naturalidade", "").strip(),
         "categoria": request.args.get("categoria", "").strip(),
         "escalao": request.args.get("escalao_fpf", "").strip()
+        "acima_escalao": request.args.get("acima_escalao", "")
+
     }
 
     sort_col = request.args.get("sort", "player_id")
