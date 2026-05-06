@@ -278,17 +278,16 @@ def ficha_jogador(player_id):
     resumo_zz = cur.fetchone()
 
     cur.execute("""
-        SELECT e.epoca, e.competicao, e.jogos, e.golos
-        FROM estatisticas_zerozero e
-        JOIN match_zerozero_fpf m
+    SELECT e.epoca, e.competicao, e.jogos, e.golos
+    FROM estatisticas_zerozero e
+    JOIN match_zerozero_fpf m
         ON e.player_id = m.id_zerozero_atleta
-        WHERE m.player_id_fpf = %s
-        ORDER BY e.epoca DESC, e.competicao
-    """, (player_id,))
-    rows = cur.fetchall()
+    WHERE m.player_id_fpf = %s
+    ORDER BY e.epoca DESC, e.competicao
+""", (player_id,))
+rows = cur.fetchall()
 
-
-   historico_formatado = []
+historico_formatado = []
 epoca_anterior = None
 
 for row in rows:
@@ -300,13 +299,12 @@ for row in rows:
     else:
         epoca_mostrar = ""
 
-    # ✅ extrair escalão (ex: S15)
+    # extrair escalão (S13, S15, etc)
     escalao_encontrado = None
     match = re.search(r"S(\d+)", row["competicao"])
     if match:
         escalao_encontrado = int(match.group(1))
 
-    # ✅ calcular se joga acima
     acima = False
     if (
         epoca == "2025/26" and
@@ -316,7 +314,6 @@ for row in rows:
     ):
         acima = True
 
-    # ✅ adicionar à lista final
     historico_formatado.append({
         "epoca": epoca_mostrar,
         "competicao": row["competicao"],
@@ -324,6 +321,7 @@ for row in rows:
         "golos": row["golos"],
         "acima": acima
     })
+
 
 import re
 
