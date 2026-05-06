@@ -275,6 +275,8 @@ def ficha_jogador(player_id):
     """, (player_id,))
     resumo_zz = cur.fetchall()
 
+# FIX FINAL ZZ LINK
+
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
