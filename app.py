@@ -300,6 +300,23 @@ def ficha_jogador(player_id):
         else:
             epoca_mostrar = ""
 
+import re
+
+    for row in rows:
+    texto = row["competicao"]
+
+    escalao_encontrado = None
+    match = re.search(r"S(\d+)", texto)
+    if match:
+        escalao_encontrado = int(match.group(1))
+
+    row["acima"] = False
+
+    if row["epoca"] == "2025/26" and escalao_encontrado and escalao_teorico:
+        if escalao_encontrado > escalao_teorico:
+            row["acima"] = True
+
+
         historico_formatado.append({
             "epoca": epoca_mostrar,
             "competicao": row["competicao"],
@@ -345,7 +362,9 @@ def ficha_jogador(player_id):
         joga_acima=joga_acima
     )
 
-# TESTE ALTERAÇÃO
+
+print("AAAA TESTE GIT")
+
 
 # ======================================================
 # RUN
