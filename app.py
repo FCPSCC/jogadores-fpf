@@ -141,12 +141,26 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     """
 
     cur.execute(query, params + [offset])
-    rows = cur.fetchall()
+rows = cur.fetchall()
 
-    cur.close()
-    conn.close()
+cur.close()
+conn.close()
 
-    return rows, total
+jogadores = []
+for r in rows:
+    jogadores.append((
+        r["player_id"],
+        r["nome"],
+        r["data_nascimento"],
+        r["clube"],
+        r["escalao"],
+        r["ano_nascimento"],
+        r["distrito"],
+        r["naturalidade"]
+    ))
+
+return jogadores, total
+
 
 def obter_listas_filtros():
     conn = get_db()
