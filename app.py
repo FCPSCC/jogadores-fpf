@@ -260,7 +260,7 @@ def ficha_jogador(player_id):
     if not jogador:
         return "Jogador não encontrado", 404
 
-   cur.execute("""
+    cur.execute("""
         SELECT e.jogos, e.golos, e.competicao, e.epoca,
            e.ultima_atualizacao, e.zz_player_url, e.foto_url
         FROM estatisticas_zerozero e
@@ -275,7 +275,7 @@ def ficha_jogador(player_id):
         FROM vw_atleta_zerozero_resumo
         WHERE player_id = %s
     """, (player_id,))
-    resumo_zz = cur.fetchall()
+    resumo_zz = cur.fetchone()
 
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
