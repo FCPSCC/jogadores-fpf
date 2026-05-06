@@ -119,14 +119,9 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         filtros_sql += " AND escalao = %s"
         params.append(f["escalao"])
 
+    # ✅ CORREÇÃO AQUI (indentação e formato simples)
     if f.get("acima_escalao") == "1":
-    filtros_sql += """
-        AND player_id IN (
-            SELECT player_id
-            FROM participacao_epoca_atual
-            WHERE epoca = '2025/2026'
-        )
-    """
+        filtros_sql += " AND player_id IN (SELECT player_id FROM participacao_epoca_atual WHERE epoca = '2025/2026')"
 
     # TOTAL
     cur.execute(
@@ -201,7 +196,6 @@ def obter_listas_filtros():
 
     return categorias, escalaoes, distritos, naturalidades
 
-
 # ======================================================
 # INDEX
 # ======================================================
@@ -259,7 +253,6 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
-    # Jogador base
     cur.execute(
         "SELECT * FROM jogadores WHERE player_id = %s",
         (player_id,)
@@ -268,7 +261,6 @@ def ficha_jogador(player_id):
     if not jogador:
         return "Jogador não encontrado", 404
 
-    # ZeroZero detalhe
     cur.execute("""
         SELECT jogos, golos, competicao, epoca,
                ultima_atualizacao, zz_player_url, foto_url
@@ -277,7 +269,6 @@ def ficha_jogador(player_id):
     """, (player_id,))
     zz = cur.fetchone()
 
-    # Resumo agregado
     cur.execute("""
         SELECT total_jogos, total_golos, foto_url, joga_acima
         FROM vw_atleta_zerozero_resumo
@@ -285,7 +276,6 @@ def ficha_jogador(player_id):
     """, (player_id,))
     resumo_zz = cur.fetchone()
 
-    # Histórico ZeroZero
     cur.execute("""
         SELECT epoca, competicao, jogos, golos
         FROM vw_atleta_zerozero_historico
@@ -294,7 +284,6 @@ def ficha_jogador(player_id):
     """, (player_id,))
     rows = cur.fetchall()
 
-    # ✅ FORMATAR POR ÉPOCA (como queres)
     historico_formatado = []
     epoca_anterior = None
 
@@ -314,7 +303,6 @@ def ficha_jogador(player_id):
             "golos": row["golos"]
         })
 
-    # Participação FPF
     cur.execute("""
         SELECT modalidade, clube, escalao,
                escalao_texto, jogos, golos
@@ -327,7 +315,6 @@ def ficha_jogador(player_id):
     cur.close()
     conn.close()
 
-    # Cálculos
     cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = extrair_numero_escalao(cat_teorica)
 
