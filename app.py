@@ -286,9 +286,11 @@ def ficha_jogador(player_id):
     # Participação FPF
     cur.execute("""
         SELECT modalidade, clube, escalao,
-               escalao_texto, jogos, golos
+           escalao_texto, jogos, golos
         FROM participacao_epoca_atual
         WHERE player_id = %s
+        AND epoca = '2025/2026'
+        AND jogos > 0
         ORDER BY escalao DESC, jogos DESC
     """, (player_id,))
     participacao = cur.fetchall()
