@@ -101,6 +101,12 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         filtros_sql += " AND ano_nascimento = %s"
         params.append(int(f["ano_nasc"]))
 
+    if f.get("categoria") and f["categoria"].startswith("Sub-"):
+        sub = int(f["categoria"].replace("Sub-", ""))
+        ano_ref = obter_ano_referencia_epoca() - sub + 1
+        filtros_sql += " AND ano_nascimento = %s"
+        params.append(ano_ref)
+
     if f.get("distrito"):
         filtros_sql += " AND distrito = %s"
         params.append(f["distrito"])
@@ -120,14 +126,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     )
     total = cur.fetchone()["total"]
 
-    # ORDENAÇÃO
-    coluna = sort_col if sort_col in [
-        "player_id", "nome", "data_nascimento",
-        "clube", "escalao", "ano_nascimento"
-    ] else "player_id"
-
-    direcao = "ASC" if sort_dir == "asc" else "DESC"
-
+    # QUERY PRINCIPAL
     query = f"""
         SELECT
             player_id, nome, data_nascimento,
@@ -136,31 +135,30 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         FROM jogadores
         {base_where}
         {filtros_sql}
-        ORDER BY {coluna} {direcao}
+        ORDER BY player_id DESC
         LIMIT 100 OFFSET %s
     """
 
     cur.execute(query, params + [offset])
-rows = cur.fetchall()
+    rows = cur.fetchall()
 
-cur.close()
-conn.close()
+    jogadores = []
+    for r in rows:
+        jogadores.append((
+            r["player_id"],
+            r["nome"],
+            r["data_nascimento"],
+            r["clube"],
+            r["escalao"],
+            r["ano_nascimento"],
+            r["distrito"],
+            r["naturalidade"]
+        ))
 
-jogadores = []
-for r in rows:
-    jogadores.append((
-        r["player_id"],
-        r["nome"],
-        r["data_nascimento"],
-        r["clube"],
-        r["escalao"],
-        r["ano_nascimento"],
-        r["distrito"],
-        r["naturalidade"]
-    ))
+    cur.close()
+    conn.close()
 
-return jogadores, total
-
+    return jogadores, total
 
 def obter_listas_filtros():
     conn = get_db()
