@@ -299,7 +299,6 @@ for row in rows:
     else:
         epoca_mostrar = ""
 
-    # extrair escalão (S13, S15, etc)
     escalao_encontrado = None
     match = re.search(r"S(\d+)", row["competicao"])
     if match:
@@ -321,7 +320,6 @@ for row in rows:
         "golos": row["golos"],
         "acima": acima
     })
-
 
 import re
 
