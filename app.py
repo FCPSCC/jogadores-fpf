@@ -284,36 +284,32 @@ def ficha_jogador(player_id):
     """, (player_id,))
     rows = cur.fetchall()
 
-    # ✅ FORMATAR COMO TU QUERES
+    # ✅ FORMATAR POR ÉPOCA (como queres)
     historico_formatado = []
     epoca_anterior = None
 
-for row in rows:
-    epoca = row["epoca"]
+    for row in rows:
+        epoca = row["epoca"]
 
-    if epoca != epoca_anterior:
-        epoca_mostrar = epoca
-        epoca_anterior = epoca
-    else:
-        epoca_mostrar = ""
+        if epoca != epoca_anterior:
+            epoca_mostrar = epoca
+            epoca_anterior = epoca
+        else:
+            epoca_mostrar = ""
 
-    historico_formatado.append({
-        "epoca": epoca_mostrar,
-        "competicao": row["competicao"],
-        "jogos": row["jogos"],
-        "golos": row["golos"]
-    })
-
-
+        historico_formatado.append({
+            "epoca": epoca_mostrar,
+            "competicao": row["competicao"],
+            "jogos": row["jogos"],
+            "golos": row["golos"]
+        })
 
     # Participação FPF
     cur.execute("""
         SELECT modalidade, clube, escalao,
-           escalao_texto, jogos, golos
+               escalao_texto, jogos, golos
         FROM participacao_epoca_atual
         WHERE player_id = %s
-        AND epoca = '2025/2026'
-        AND jogos > 0
         ORDER BY escalao DESC, jogos DESC
     """, (player_id,))
     participacao = cur.fetchall()
@@ -341,7 +337,7 @@ for row in rows:
         jogador=jogador,
         zz=zz,
         resumo_zz=resumo_zz,
-         historico_zz=historico_formatado,
+        historico_zz=historico_formatado,
         participacao=participacao,
         escalao_teorico=escalao_teorico,
         escalao_real_max=escalao_real_max,
