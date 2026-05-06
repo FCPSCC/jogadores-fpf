@@ -266,18 +266,18 @@ def ficha_jogador(player_id):
         FROM estatisticas_zerozero
         WHERE player_id = %s
     """, (player_id,))
-    zz = cur.fetchone()
+    zz = cur.fetchall()
 
     cur.execute("""
         SELECT total_jogos, total_golos, foto_url, joga_acima
         FROM vw_atleta_zerozero_resumo
         WHERE player_id = %s
     """, (player_id,))
-    resumo_zz = cur.fetchone()
+    resumo_zz = cur.fetchall()
 
     cur.execute("""
         SELECT epoca, competicao, jogos, golos
-        FROM vw_atleta_zerozero_historico
+        FROM estatisticas_zerozero
         WHERE player_id = %s
         ORDER BY epoca DESC, competicao
     """, (player_id,))

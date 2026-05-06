@@ -157,26 +157,34 @@ a:hover { text-decoration: underline; }
     <tr>
         <th>Época</th>
         <th>Competição</th>
-        <th>Jogos</th>
-        <th>Golos</th>
+        <th>J</th>
+        <th>G</th>
     </tr>
 
-    {% if zz %}
-        {% for linha in zz %}
+    {% if historico_zz %}
+        {% for linha in historico_zz %}
+
+        {% if linha.epoca %}
         <tr>
-            <td>{{ linha.epoca }}</td>
-            <td>{{ linha.competicao }}</td>
-            <td>{{ linha.jogos }}</td>
-            <td>{{ linha.golos }}</td>
+            <td colspan="4" style="background:#f5f5f5; height:6px;"></td>
         </tr>
+        {% endif %}
+
+        <tr>
+            <td><strong>{{ linha.epoca }}</strong></td>
+            <td>{{ linha.competicao }}</td>
+            <td style="text-align:right">{{ linha.jogos }}</td>
+            <td style="text-align:right">{{ linha.golos }}</td>
+        </tr>
+
         {% endfor %}
     {% else %}
         <tr>
             <td colspan="4">Sem dados ZeroZero</td>
         </tr>
     {% endif %}
-</table>
 
+</table>
 <div class="top-bar">
     ← <a href="/">Voltar à lista</a>
 </div>
