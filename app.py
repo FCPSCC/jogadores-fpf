@@ -80,6 +80,39 @@ def logout():
     session.clear()
     return redirect("/login")
 
+def obter_listas_filtros():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT DISTINCT escalao FROM jogadores WHERE escalao IS NOT NULL")
+    escalaoes_raw = [r["escalao"] for r in cur.fetchall()]
+
+    escalaoes = sorted(list(set(escalaoes_raw)))
+
+    cur.execute("""
+        SELECT DISTINCT distrito
+        FROM jogadores
+        WHERE distrito IS NOT NULL
+        ORDER BY distrito
+    """)
+    distritos = [r["distrito"] for r in cur.fetchall()]
+
+    cur.execute("""
+        SELECT DISTINCT naturalidade
+        FROM jogadores
+        WHERE naturalidade IS NOT NULL
+        ORDER BY naturalidade
+    """)
+    naturalidades = [r["naturalidade"] for r in cur.fetchall()]
+
+    cur.close()
+    conn.close()
+
+    categorias = [f"Sub-{i}" for i in range(5, 20)] + ["Sénior"]
+
+    return categorias, escalaoes, distritos, naturalidades
+
+
 # ======================================================
 # INDEX
 # ======================================================
