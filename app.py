@@ -286,8 +286,9 @@ def ficha_jogador(player_id):
     ORDER BY e.epoca DESC, e.competicao
 """, (player_id,))
 
-rows = cur.fetchall()    
-rows = cur.fetchall_formatado = []
+rows = cur.fetchall()
+
+    historico_formatado = []
     epoca_anterior = None
 
     for row in rows:
@@ -306,10 +307,10 @@ rows = cur.fetchall_formatado = []
 
         acima = False
         if (
-            epoca == "2025/26" and
-            escalao_encontrado is not None and
-            escalao_teorico is not None and
-            escalao_encontrado > escalao_teorico
+            epoca == "2025/26"
+            and escalao_encontrado is not None
+            and escalao_teorico is not None
+            and escalao_encontrado > escalao_teorico
         ):
             acima = True
 
