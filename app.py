@@ -286,7 +286,8 @@ def ficha_jogador(player_id):
     ORDER BY e.epoca DESC, e.competicao
 """, (player_id,))
 
-rows = cur.fetchall()    rows = cur.fetchall_formatado = []
+rows = cur.fetchall()    
+rows = cur.fetchall_formatado = []
     epoca_anterior = None
 
     for row in rows:
