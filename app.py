@@ -261,23 +261,6 @@ def ficha_jogador(player_id):
         return "Jogador não encontrado", 404
 
     cur.execute("""
-        SELECT e.jogos, e.golos, e.competicao, e.epoca,
-           e.ultima_atualizacao, e.zz_player_url, e.foto_url
-        FROM estatisticas_zerozero e
-        JOIN match_zerozero_fpf m
-        ON e.player_id = m.id_zerozero_atleta
-        WHERE m.player_id_fpf = %s
-    """, (player_id,))
-    zz = cur.fetchall()
-
-    cur.execute("""
-        SELECT total_jogos, total_golos, foto_url, joga_acima
-        FROM vw_atleta_zerozero_resumo
-        WHERE player_id = %s
-    """, (player_id,))
-    resumo_zz = cur.fetchone()
-
-    cur.execute("""
     SELECT e.epoca, e.competicao, e.jogos, e.golos
     FROM estatisticas_zerozero e
     JOIN match_zerozero_fpf m
@@ -285,42 +268,42 @@ def ficha_jogador(player_id):
     WHERE m.player_id_fpf = %s
     ORDER BY e.epoca DESC, e.competicao
 """, (player_id,))
-
 rows = cur.fetchall()
 
-    historico_formatado = []
+# ✅ BLOCO LIMPO (sem indent bugs)
+        historico_formatado = []
     epoca_anterior = None
 
     for row in rows:
         epoca = row["epoca"]
 
         if epoca != epoca_anterior:
-            epoca_mostrar = epoca
-            epoca_anterior = epoca
+        epoca_mostrar = epoca
+        epoca_anterior = epoca
         else:
-            epoca_mostrar = ""
+        epoca_mostrar = ""
 
         escalao_encontrado = None
         match = re.search(r"S(\d+)", row["competicao"])
         if match:
-            escalao_encontrado = int(match.group(1))
+        escalao_encontrado = int(match.group(1))
 
         acima = False
-        if (
-            epoca == "2025/26"
-            and escalao_encontrado is not None
-            and escalao_teorico is not None
-            and escalao_encontrado > escalao_teorico
-        ):
-            acima = True
+    if (
+        epoca == "2025/26"
+        and escalao_encontrado is not None
+        and escalao_teorico is not None
+        and escalao_encontrado > escalao_teorico
+    ):
+        acima = True
 
         historico_formatado.append({
-            "epoca": epoca_mostrar,
-            "competicao": row["competicao"],
-            "jogos": row["jogos"],
-            "golos": row["golos"],
-            "acima": acima
-        })
+        "epoca": epoca_mostrar,
+        "competicao": row["competicao"],
+        "jogos": row["jogos"],
+        "golos": row["golos"],
+        "acima": acima
+    })
 
 import re
 
