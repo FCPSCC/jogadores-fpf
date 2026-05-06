@@ -89,28 +89,40 @@ def index():
     if not session.get("autenticado"):
         return redirect("/login")
 
-    filtros = {
-        "nome": "",
-        "clube": "",
-        "ano_nasc": "",
-        "distrito": "",
-        "naturalidade": "",
-        "categoria": "",
-        "escalao": ""
+    f = {
+        "nome": request.args.get("nome", "").strip(),
+        "clube": request.args.get("clube", "").strip(),
+        "ano_nasc": request.args.get("ano_nasc", "").strip(),
+        "distrito": request.args.get("distrito", "").strip(),
+        "naturalidade": request.args.get("naturalidade", "").strip(),
+        "categoria": request.args.get("categoria", "").strip(),
+        "escalao": request.args.get("escalao_fpf", "").strip()
     }
+
+    sort_col = request.args.get("sort", "player_id")
+    sort_dir = request.args.get("dir", "desc")
+    page = int(request.args.get("page", 0))
+    offset = page * 100
+
+    jogadores = []
+    total = 0
+
+    if any(v for v in f.values()):
+        jogadores, total = obter_jogadores(f, sort_col, sort_dir, offset)
+
+    categorias, escalaoes, distritos, naturalidades = obter_listas_filtros()
 
     return render_template(
         "index.html",
-        filtros=filtros,
-        jogadores=[],
-        total=0,
-        categorias=[],
-        escalaoes_fpf=[],
-        distritos=[],
-        naturalidades=[],
-        page=0
+        jogadores=jogadores,
+        total=total,
+        filtros=f,
+        categorias=categorias,
+        escalaoes_fpf=escalaoes,
+        distritos=distritos,
+        naturalidades=naturalidades,
+        page=page
     )
-
 
 # ======================================================
 # FICHA DO JOGADOR
