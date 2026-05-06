@@ -217,17 +217,17 @@ def index():
     if not session.get("autenticado"):
         return redirect("/login")
 
-    f = {
-        "nome": request.args.get("nome", "").strip(),
-        "clube": request.args.get("clube", "").strip(),
-        "ano_nasc": request.args.get("ano_nasc", "").strip(),
-        "distrito": request.args.get("distrito", "").strip(),
-        "naturalidade": request.args.get("naturalidade", "").strip(),
-        "categoria": request.args.get("categoria", "").strip(),
-        "escalao": request.args.get("escalao_fpf", "").strip()
-        "acima_escalao": request.args.get("acima_escalao", "")
+f = {
+    "nome": request.args.get("nome", "").strip(),
+    "clube": request.args.get("clube", "").strip(),
+    "ano_nasc": request.args.get("ano_nasc", "").strip(),
+    "distrito": request.args.get("distrito", "").strip(),
+    "naturalidade": request.args.get("naturalidade", "").strip(),
+    "categoria": request.args.get("categoria", "").strip(),
+    "escalao": request.args.get("escalao_fpf", "").strip(),
+    "acima_escalao": request.args.get("acima_escalao", "")
+}
 
-    }
 
     sort_col = request.args.get("sort", "player_id")
     sort_dir = request.args.get("dir", "desc")
