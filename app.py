@@ -41,7 +41,6 @@ def obter_ano_referencia_epoca():
     hoje = date.today()
     return hoje.year if hoje.month >= 7 else hoje.year - 1
 
-
 def calcular_categoria_por_ano(ano_nascimento):
     if not ano_nascimento:
         return None
@@ -52,18 +51,15 @@ def calcular_categoria_por_ano(ano_nascimento):
         return f"Sub-{sub}"
     return "Sénior"
 
-
 def extrair_numero_escalao(cat):
     if cat and cat.startswith("Sub-"):
         return int(cat.replace("Sub-", ""))
     return None
 
-
 def normalizar_escalao(txt):
     if not txt:
         return txt
     return re.sub(r"\s+\(", "(", txt)
-
 
 # ======================================================
 # LOGIN
@@ -79,12 +75,10 @@ def login():
         erro = "Password incorreta"
     return render_template("login.html", erro=erro)
 
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
-
 
 # ======================================================
 # OBTER JOGADORES
@@ -163,7 +157,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     jogadores = []
     for r in rows:
-    categoria = calcular_categoria_por_ano(r["ano_nascimento"])
+        categoria = calcular_categoria_por_ano(r["ano_nascimento"])
 
         jogadores.append((
             r["player_id"],
@@ -171,7 +165,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
             r["data_nascimento"],
             r["clube"],
             r["escalao"],
-            r["ano_nascimento"],
+            categoria,
             r["distrito"],
             r["naturalidade"]
         ))
@@ -180,7 +174,6 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     conn.close()
 
     return jogadores, total
-
 
 # ======================================================
 # INDEX
@@ -219,7 +212,6 @@ def index():
         page=page
     )
 
-
 # ======================================================
 # FICHA DO JOGADOR
 # ======================================================
@@ -232,16 +224,15 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
-    # Jogador
     cur.execute(
         "SELECT * FROM jogadores WHERE player_id = %s",
         (player_id,)
     )
     jogador = cur.fetchone()
+
     if not jogador:
         return "Jogador não encontrado", 404
 
-    # Histórico ZZ
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
@@ -250,16 +241,11 @@ def ficha_jogador(player_id):
         WHERE m.player_id_fpf = %s
         ORDER BY e.epoca DESC, e.competicao
     """, (player_id,))
+
     rows = cur.fetchall()
 
-    # Flag época atual
-    tem_epoca_atual = any(
-    r["epoca"] == "2025/26" and (r["jogos"] or r["golos"])
-    for r in rows
-)
+    tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
 
-
-    cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
     escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
 
     historico_formatado = []
@@ -281,18 +267,17 @@ def ficha_jogador(player_id):
 
         acima = False
         if (
-            epoca == "2025/26" and
-            escalao_encontrado is not None and
-            escalao_teorico is not None and
-            escalao_encontrado > escalao_teorico
+            epoca == "2025/26"
+            and escalao_encontrado is not None
+            and escalao_encontrado > escalao_teorico
         ):
             acima = True
 
         historico_formatado.append({
             "epoca": epoca_mostrar,
             "competicao": row["competicao"],
-            "jogos": row["jogos"] if row["jogos"] is not None else 0,
-            "golos": row["golos"] if row["golos"] is not None else 0,
+            "jogos": row["jogos"] or 0,
+            "golos": row["golos"] or 0,
             "acima": acima
         })
 
