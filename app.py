@@ -276,12 +276,15 @@ def ficha_jogador(player_id):
     resumo_zz = cur.fetchall()
 
     cur.execute("""
-        SELECT epoca, competicao, jogos, golos
-        FROM estatisticas_zerozero
-        WHERE player_id = %s
-        ORDER BY epoca DESC, competicao
+        SELECT e.epoca, e.competicao, e.jogos, e.golos
+        FROM estatisticas_zerozero e
+        JOIN match_zerozero_fpf m
+        ON e.player_id = m.id_zerozero_atleta
+        WHERE m.player_id_fpf = %s
+        ORDER BY e.epoca DESC, e.competicao
     """, (player_id,))
     rows = cur.fetchall()
+
 
     historico_formatado = []
     epoca_anterior = None
