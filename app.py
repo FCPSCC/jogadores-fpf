@@ -120,19 +120,13 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         params.append(f["escalao"])
 
     if f.get("acima_escalao") == "1":
-        filtros_sql += """
+    filtros_sql += """
         AND player_id IN (
             SELECT player_id
             FROM participacao_epoca_atual
             WHERE epoca = '2025/2026'
-            GROUP BY player_id
-            HAVING MAX(escalao) >
-                   MAX(escalao_teorico)
         )
     """
-
-    params.append(obter_ano_referencia_epoca())
-
 
     # TOTAL
     cur.execute(
