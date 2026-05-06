@@ -295,7 +295,6 @@ tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
         escalao_real_max=escalao_real_max,
         joga_acima=joga_acima,
         tem_epoca_atual=tem_epoca_atual
-)
     )
 
 # ======================================================
