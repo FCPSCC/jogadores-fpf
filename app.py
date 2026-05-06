@@ -265,7 +265,7 @@ def ficha_jogador(player_id):
                ultima_atualizacao, zz_player_url, foto_url
         FROM estatisticas_zerozero
         WHERE player_id = %s
-    """, (player_id,))
+    """, (jogador["id_zerozero_atleta"],))
     zz = cur.fetchall()
 
     cur.execute("""
