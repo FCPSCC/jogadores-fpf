@@ -235,6 +235,53 @@ a:hover { text-decoration: underline; }
     <p>Sem registos de participação na época corrente.</p>
     {% endif %}
 </div>
+<!-- =============================
+RESUMO GLOBAL ZEROZERO
+============================= -->
+{% if resumo_zz %}
+<div class="section">
+    <div class="section-title">Resumo Global ZeroZero</div>
+
+    <p><strong>Total Jogos:</strong> {{ resumo_zz["total_jogos"] }}</p>
+    <p><strong>Total Golos:</strong> {{ resumo_zz["total_golos"] }}</p>
+
+    {% if resumo_zz["joga_acima"] == 1 %}
+        <div class="badge-up">
+            🔺 Também identificado como acima (ZeroZero)
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- =============================
+HISTÓRICO COMPLETO ZEROZERO
+============================= -->
+{% if historico_zz %}
+<div class="section">
+    <div class="section-title">Histórico ZeroZero (Completo)</div>
+
+    <table class="table-historico">
+        <thead>
+            <tr>
+                <th>Época</th>
+                <th>Competição</th>
+                <th>Jogos</th>
+                <th>Golos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in historico_zz %}
+            <tr>
+                <td>{{ h["epoca"] }}</td>
+                <td>{{ h["competicao"] }}</td>
+                <td>{{ h["jogos"] }}</td>
+                <td>{{ h["golos"] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 
 <div class="footer">
     <div>ID interno: {{ jogador["player_id"] }}</div>

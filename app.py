@@ -305,6 +305,22 @@ def ficha_jogador(player_id):
     """, (player_id,))
     zz = cur.fetchone()
 
+# ✅ NOVO — resumo agregado
+cur.execute("""
+    SELECT total_jogos, total_golos, foto_url, joga_acima
+    FROM vw_atleta_zerozero_resumo
+    WHERE player_id = %s
+""", (player_id,))
+resumo_zz = cur.fetchone()
+
+# ✅ NOVO — histórico completo
+cur.execute("""
+    SELECT epoca, competicao, jogos, golos
+    FROM vw_atleta_zerozero_historico
+    WHERE player_id = %s
+""", (player_id,))
+historico_zz = cur.fetchall()
+
     # Histórico competitivo
     cur.execute("""
         SELECT modalidade, clube, escalao,
@@ -336,10 +352,13 @@ def ficha_jogador(player_id):
         "jogador.html",
         jogador=jogador,
         zz=zz,
+	resumo_zz=resumo_zz,
+	historico_zz=historico_zz,
         participacao=participacao,
         escalao_teorico=escalao_teorico,
         escalao_real_max=escalao_real_max,
         joga_acima=joga_acima
+	
     )
 
 # ======================================================

@@ -36,21 +36,21 @@ def extrair_dados_zerozero(url):
 
     html = r.text
 
-    # ----------------------------
-    # FOTO (background-image)
-    # ----------------------------
+    # --------------------------------------------------
+    # FOTO DO JOGADOR (FORMA CANÓNICA – OG:IMAGE)
+    # --------------------------------------------------
     foto_url = None
     foto_match = re.search(
-        r'background-image\s*:\s*url\([\'"]?(https://cdn-img\.staticzz\.com/[^\'")]+)',
+        r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
         html,
         re.IGNORECASE
     )
     if foto_match:
         foto_url = foto_match.group(1)
 
-    # ----------------------------
-    # ÉPOCA + COMPETIÇÃO (HEADER)
-    # ----------------------------
+    # --------------------------------------------------
+    # ÉPOCA + COMPETIÇÃO (HEADER RESUMO)
+    # --------------------------------------------------
     epoca = None
     competicao = None
 
@@ -63,27 +63,27 @@ def extrair_dados_zerozero(url):
         epoca = header_match.group(1)
         competicao = header_match.group(2)
 
-    # ----------------------------
-    # JOGOS E GOLOS
-    # ----------------------------
+    # --------------------------------------------------
+    # JOGOS E GOLOS (BLOCO PRINCIPAL)
+    # --------------------------------------------------
     jogos = None
     golos = None
 
-    jm = re.search(
+    jogos_match = re.search(
         r'<div class="number">\s*(\d+)\s*</div>\s*<div class="label">\s*Jogos\s*</div>',
         html,
         re.IGNORECASE
     )
-    gm = re.search(
+    golos_match = re.search(
         r'<div class="number">\s*(\d+)\s*</div>\s*<div class="label">\s*Golos\s*</div>',
         html,
         re.IGNORECASE
     )
 
-    if jm:
-        jogos = int(jm.group(1))
-    if gm:
-        golos = int(gm.group(1))
+    if jogos_match:
+        jogos = int(jogos_match.group(1))
+    if golos_match:
+        golos = int(golos_match.group(1))
 
     if jogos is None or golos is None:
         return None
@@ -116,6 +116,11 @@ def main():
 
     jogadores = c.fetchall()
     print(f"Jogadores a atualizar: {len(jogadores)}")
+
+    if not jogadores:
+        conn.close()
+        print("Nada para atualizar.")
+        return
 
     for player_id, zz_url in jogadores:
         print(f"▶️ Atualizar player_id {player_id}")

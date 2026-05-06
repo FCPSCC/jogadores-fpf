@@ -1,0 +1,710 @@
+
+Traceback (most recent call last):
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 272, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 219, in main
+    mapa_clubes = carregar_mapa_clubes()
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 98, in carregar_mapa_clubes
+    print(f"\u2705 Clubes carregados: {len(mapa)}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
+Traceback (most recent call last):
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 284, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 231, in main
+    mapa_clubes = carregar_mapa_clubes()
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 102, in carregar_mapa_clubes
+    print(f"\u2705 Clubes carregados: {len(mapa)}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
+[main c2f6bce] AtualizaÃ§Ã£o automÃ¡tica da BD
+ Committer: Augusto Roxo <augusto.roxo@fcporto.pt>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+To https://github.com/FCPSCC/jogadores-fpf.git
+   6556ffa..c2f6bce  main -> main
+Clubes carregados: 2060
+ID 2353333 — Martim Mendes Silva
+ERRO 2353334 inexistente / erro (1)
+ID 2353335 — Diogo Martim Ribeiro Da Cunha
+ERRO 2353336 inexistente / erro (1)
+ID 2353337 — Henrique Cunha Da Rocha
+ID 2353338 — Angelo Gabriel Contreras Ledezma
+ID 2353339 — Santiago Batista Grazina Gomes
+ID 2353340 — Tomé Clemente Pedroso Rodrigues
+ID 2353341 — Benjamin Nogueira Cavallaro
+ID 2353342 — Edwin Ricardo Matias Vicente
+ID 2353343 — Jean Pierre De Lucinda Bata
+ID 2353344 — Raul Soares Vicente
+ID 2353345 — Mariano Gomes
+ID 2353346 — Günter Josef Vieira Sternhagen
+ID 2353347 — Daniela Pinto Amaral
+ID 2353348 — Thiago Luis Vieira Sternhagen
+ID 2353349 — Rita Videira Pinheiro
+ID 2353350 — Mara Isabel Barreiros Macário
+ID 2353351 — Iris Santinho Figueiredo
+ID 2353352 — Rita Moreira Henriques
+ID 2353353 — Iara Carolina Correia Zouhdi
+ID 2353354 — David Matheus Silva De França
+ERRO 2353355 inexistente / erro (1)
+ERRO 2353356 inexistente / erro (2)
+ID 2353357 — Enzo Gabriel Ribeiro Amaral
+ID 2353358 — Diogo Santos Fernandes
+ID 2353359 — Bruno Filipe Pedro Dos Santos
+ID 2353360 — Jonathan Alexandre Fragoso Fortunato E Silva
+ID 2353361 — Rafael Alexandre Silva Godinho
+ID 2353362 — Lorenzo Miguel De Amorim Franquinho
+ID 2353363 — Zé Maria Ruas Virtuoso
+ID 2353364 — Micael Luís Marques Pires
+ID 2353365 — Lourenço Martins Neves Pinto
+ID 2353366 — Gabriel Santos Gomes
+ID 2353367 — Duarte Vicente Zurga
+ID 2353368 — Leandro Filipe Ramos Monteiro
+ID 2353369 — Evandro Da Luz Noronha
+ID 2353370 — Matilde Lorenço De Almeida
+ID 2353371 — Gilcélio Junior Soares Oliveira
+ID 2353372 — Ari Cravinho Cerejo
+ID 2353373 — Arthur Moraes De Oliveira
+ID 2353374 — Gabriel Hall Vieira Da Luz
+ERRO 2353375 inexistente / erro (1)
+ID 2353376 — Theo Fernando Renaut Lavado Figueira
+ERRO 2353377 inexistente / erro (1)
+ERRO 2353378 inexistente / erro (2)
+ERRO 2353379 inexistente / erro (3)
+ID 2353380 — Salvador Guerra Carvalho
+ID 2353381 — Lourenço Miguel Silva Teles
+ID 2353382 — Radu Martim Raican Machado
+ERRO 2353383 inexistente / erro (1)
+ID 2353384 — Francisco Maria Vital Jerónimo
+ID 2353385 — Francisco Da Cruz Rato
+ID 2353386 — Santiago Felipe Rocha Martins
+ID 2353387 — Rafael Pinto Da Costa
+ID 2353388 — Domingos Moreira Candeias Da Silva
+ID 2353389 — Santiago Dias De Deus
+ID 2353390 — Francisco Alexandre Gouveia Dias
+ID 2353391 — Zuhair Thomas Micah Farah
+ID 2353392 — Lorenzo Dias Carneiro
+ID 2353393 — Oliver Utracki Rocha
+ID 2353394 — Artur Guerreiro Lopes
+ID 2353395 — Ivo Alexandre Encarnação Afonso
+ID 2353396 — Crésio Manuel José Vinevala
+ID 2353397 — Dinis Matias José Pereira
+ERRO 2353398 inexistente / erro (1)
+ERRO 2353399 inexistente / erro (2)
+ERRO 2353400 inexistente / erro (3)
+ERRO 2353401 inexistente / erro (4)
+ERRO 2353402 inexistente / erro (5)
+ERRO 2353403 inexistente / erro (6)
+ERRO 2353404 inexistente / erro (7)
+ERRO 2353405 inexistente / erro (8)
+ERRO 2353406 inexistente / erro (9)
+ERRO 2353407 inexistente / erro (10)
+ERRO 2353408 inexistente / erro (11)
+ERRO 2353409 inexistente / erro (12)
+ERRO 2353410 inexistente / erro (13)
+ERRO 2353411 inexistente / erro (14)
+ERRO 2353412 inexistente / erro (15)
+ERRO 2353413 inexistente / erro (16)
+ERRO 2353414 inexistente / erro (17)
+ERRO 2353415 inexistente / erro (18)
+ERRO 2353416 inexistente / erro (19)
+ERRO 2353417 inexistente / erro (20)
+ERRO 2353418 inexistente / erro (21)
+ERRO 2353419 inexistente / erro (22)
+ERRO 2353420 inexistente / erro (23)
+ERRO 2353421 inexistente / erro (24)
+ERRO 2353422 inexistente / erro (25)
+ERRO 2353423 inexistente / erro (26)
+ERRO 2353424 inexistente / erro (27)
+ERRO 2353425 inexistente / erro (28)
+ERRO 2353426 inexistente / erro (29)
+ERRO 2353427 inexistente / erro (30)
+ERRO 2353428 inexistente / erro (31)
+ERRO 2353429 inexistente / erro (32)
+ERRO 2353430 inexistente / erro (33)
+ERRO 2353431 inexistente / erro (34)
+ERRO 2353432 inexistente / erro (35)
+ERRO 2353433 inexistente / erro (36)
+ERRO 2353434 inexistente / erro (37)
+ERRO 2353435 inexistente / erro (38)
+ERRO 2353436 inexistente / erro (39)
+ERRO 2353437 inexistente / erro (40)
+ERRO 2353438 inexistente / erro (41)
+ERRO 2353439 inexistente / erro (42)
+ERRO 2353440 inexistente / erro (43)
+ERRO 2353441 inexistente / erro (44)
+ERRO 2353442 inexistente / erro (45)
+ERRO 2353443 inexistente / erro (46)
+ERRO 2353444 inexistente / erro (47)
+ERRO 2353445 inexistente / erro (48)
+ERRO 2353446 inexistente / erro (49)
+ERRO 2353447 inexistente / erro (50)
+ERRO 2353448 inexistente / erro (51)
+ERRO 2353449 inexistente / erro (52)
+ERRO 2353450 inexistente / erro (53)
+ERRO 2353451 inexistente / erro (54)
+ERRO 2353452 inexistente / erro (55)
+ERRO 2353453 inexistente / erro (56)
+ERRO 2353454 inexistente / erro (57)
+ERRO 2353455 inexistente / erro (58)
+ERRO 2353456 inexistente / erro (59)
+ERRO 2353457 inexistente / erro (60)
+ERRO 2353458 inexistente / erro (61)
+ERRO 2353459 inexistente / erro (62)
+ERRO 2353460 inexistente / erro (63)
+ERRO 2353461 inexistente / erro (64)
+ERRO 2353462 inexistente / erro (65)
+ERRO 2353463 inexistente / erro (66)
+ERRO 2353464 inexistente / erro (67)
+ERRO 2353465 inexistente / erro (68)
+ERRO 2353466 inexistente / erro (69)
+ERRO 2353467 inexistente / erro (70)
+ERRO 2353468 inexistente / erro (71)
+ERRO 2353469 inexistente / erro (72)
+ERRO 2353470 inexistente / erro (73)
+ERRO 2353471 inexistente / erro (74)
+ERRO 2353472 inexistente / erro (75)
+ERRO 2353473 inexistente / erro (76)
+ERRO 2353474 inexistente / erro (77)
+ERRO 2353475 inexistente / erro (78)
+ERRO 2353476 inexistente / erro (79)
+ERRO 2353477 inexistente / erro (80)
+Limite de falhas consecutivas atingido
+Execução terminada com sucesso.
+[main af0c9de] AtualizaÃ§Ã£o automÃ¡tica da BD
+ Committer: Augusto Roxo <augusto.roxo@fcporto.pt>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+To https://github.com/FCPSCC/jogadores-fpf.git
+   5709d18..af0c9de  main -> main
+Clubes carregados: 2060
+ERRO 2353398 inexistente / erro (1)
+ERRO 2353399 inexistente / erro (2)
+ERRO 2353400 inexistente / erro (3)
+ERRO 2353401 inexistente / erro (4)
+ERRO 2353402 inexistente / erro (5)
+ERRO 2353403 inexistente / erro (6)
+ERRO 2353404 inexistente / erro (7)
+ERRO 2353405 inexistente / erro (8)
+ERRO 2353406 inexistente / erro (9)
+ERRO 2353407 inexistente / erro (10)
+ERRO 2353408 inexistente / erro (11)
+ERRO 2353409 inexistente / erro (12)
+ERRO 2353410 inexistente / erro (13)
+ERRO 2353411 inexistente / erro (14)
+ERRO 2353412 inexistente / erro (15)
+ERRO 2353413 inexistente / erro (16)
+ERRO 2353414 inexistente / erro (17)
+ERRO 2353415 inexistente / erro (18)
+ERRO 2353416 inexistente / erro (19)
+ERRO 2353417 inexistente / erro (20)
+ERRO 2353418 inexistente / erro (21)
+ERRO 2353419 inexistente / erro (22)
+ERRO 2353420 inexistente / erro (23)
+ERRO 2353421 inexistente / erro (24)
+ID 2353422 — Kael Augusto Navarro Gouveia
+ERRO 2353423 inexistente / erro (1)
+ID 2353424 — José Das Neves Fonseca Saraiva Gonçalves
+ID 2353425 — Nickolas Kreim De Andrade
+ERRO 2353426 inexistente / erro (1)
+ERRO 2353427 inexistente / erro (2)
+ID 2353428 — Martim Duarte Silva Carvalho
+ERRO 2353429 inexistente / erro (1)
+ERRO 2353430 inexistente / erro (2)
+ID 2353431 — Rodrigo Cunha Fernandes
+ERRO 2353432 inexistente / erro (1)
+ERRO 2353433 inexistente / erro (2)
+ID 2353434 — Jéssica Sofia Dos Santos Silva
+ID 2353435 — Lucas Manuel Ventura Rebeca
+ID 2353436 — Guilherme Ribeiro Soares
+ERRO 2353437 inexistente / erro (1)
+ID 2353438 — Maria Fernanda Coelho De Siqueira Teixeira
+ID 2353439 — Rafael Junior Said
+ID 2353440 — Dinis Da Silva Pimenta
+ERRO 2353441 inexistente / erro (1)
+ERRO 2353442 inexistente / erro (2)
+ERRO 2353443 inexistente / erro (3)
+ERRO 2353444 inexistente / erro (4)
+ERRO 2353445 inexistente / erro (5)
+ERRO 2353446 inexistente / erro (6)
+ID 2353447 — Patrick Barros Barcellos
+ERRO 2353448 inexistente / erro (1)
+ERRO 2353449 inexistente / erro (2)
+ERRO 2353450 inexistente / erro (3)
+ERRO 2353451 inexistente / erro (4)
+ERRO 2353452 inexistente / erro (5)
+ERRO 2353453 inexistente / erro (6)
+ERRO 2353454 inexistente / erro (7)
+ERRO 2353455 inexistente / erro (8)
+ERRO 2353456 inexistente / erro (9)
+ERRO 2353457 inexistente / erro (10)
+ERRO 2353458 inexistente / erro (11)
+ERRO 2353459 inexistente / erro (12)
+ERRO 2353460 inexistente / erro (13)
+ERRO 2353461 inexistente / erro (14)
+ERRO 2353462 inexistente / erro (15)
+ERRO 2353463 inexistente / erro (16)
+ERRO 2353464 inexistente / erro (17)
+ERRO 2353465 inexistente / erro (18)
+ID 2353466 — Marouan Fetouh
+ID 2353467 — Rafael António Pereira Igrejas
+ID 2353468 — Gabriel Alberto Pereira Gomes
+ID 2353469 — Ruben Joel Rocha Raimundo
+ID 2353470 —  Gabriel Kiesse Sousa Ferreira Adriano
+ID 2353471 — Enzo Paredes Vieira
+ERRO 2353472 inexistente / erro (1)
+ERRO 2353473 inexistente / erro (2)
+ID 2353474 — Duarte Lopes Gonçalves De Lima
+ERRO 2353475 inexistente / erro (1)
+ERRO 2353476 inexistente / erro (2)
+ERRO 2353477 inexistente / erro (3)
+ERRO 2353478 inexistente / erro (4)
+ERRO 2353479 inexistente / erro (5)
+ERRO 2353480 inexistente / erro (6)
+ERRO 2353481 inexistente / erro (7)
+ERRO 2353482 inexistente / erro (8)
+ERRO 2353483 inexistente / erro (9)
+ERRO 2353484 inexistente / erro (10)
+ERRO 2353485 inexistente / erro (11)
+ERRO 2353486 inexistente / erro (12)
+ERRO 2353487 inexistente / erro (13)
+ERRO 2353488 inexistente / erro (14)
+ERRO 2353489 inexistente / erro (15)
+ERRO 2353490 inexistente / erro (16)
+ERRO 2353491 inexistente / erro (17)
+ERRO 2353492 inexistente / erro (18)
+ERRO 2353493 inexistente / erro (19)
+ERRO 2353494 inexistente / erro (20)
+ERRO 2353495 inexistente / erro (21)
+ERRO 2353496 inexistente / erro (22)
+ERRO 2353497 inexistente / erro (23)
+ERRO 2353498 inexistente / erro (24)
+ERRO 2353499 inexistente / erro (25)
+ERRO 2353500 inexistente / erro (26)
+ERRO 2353501 inexistente / erro (27)
+ERRO 2353502 inexistente / erro (28)
+ERRO 2353503 inexistente / erro (29)
+ERRO 2353504 inexistente / erro (30)
+ERRO 2353505 inexistente / erro (31)
+ERRO 2353506 inexistente / erro (32)
+ERRO 2353507 inexistente / erro (33)
+ERRO 2353508 inexistente / erro (34)
+ERRO 2353509 inexistente / erro (35)
+ERRO 2353510 inexistente / erro (36)
+ERRO 2353511 inexistente / erro (37)
+ERRO 2353512 inexistente / erro (38)
+ERRO 2353513 inexistente / erro (39)
+ERRO 2353514 inexistente / erro (40)
+ERRO 2353515 inexistente / erro (41)
+ERRO 2353516 inexistente / erro (42)
+ERRO 2353517 inexistente / erro (43)
+ERRO 2353518 inexistente / erro (44)
+ERRO 2353519 inexistente / erro (45)
+ERRO 2353520 inexistente / erro (46)
+ERRO 2353521 inexistente / erro (47)
+ERRO 2353522 inexistente / erro (48)
+ERRO 2353523 inexistente / erro (49)
+ERRO 2353524 inexistente / erro (50)
+ERRO 2353525 inexistente / erro (51)
+ERRO 2353526 inexistente / erro (52)
+ERRO 2353527 inexistente / erro (53)
+ERRO 2353528 inexistente / erro (54)
+ERRO 2353529 inexistente / erro (55)
+ERRO 2353530 inexistente / erro (56)
+ERRO 2353531 inexistente / erro (57)
+ERRO 2353532 inexistente / erro (58)
+ERRO 2353533 inexistente / erro (59)
+ERRO 2353534 inexistente / erro (60)
+ERRO 2353535 inexistente / erro (61)
+ERRO 2353536 inexistente / erro (62)
+ERRO 2353537 inexistente / erro (63)
+ERRO 2353538 inexistente / erro (64)
+ERRO 2353539 inexistente / erro (65)
+ERRO 2353540 inexistente / erro (66)
+ERRO 2353541 inexistente / erro (67)
+ERRO 2353542 inexistente / erro (68)
+ERRO 2353543 inexistente / erro (69)
+ERRO 2353544 inexistente / erro (70)
+ERRO 2353545 inexistente / erro (71)
+ERRO 2353546 inexistente / erro (72)
+ERRO 2353547 inexistente / erro (73)
+ERRO 2353548 inexistente / erro (74)
+ERRO 2353549 inexistente / erro (75)
+ERRO 2353550 inexistente / erro (76)
+ERRO 2353551 inexistente / erro (77)
+ERRO 2353552 inexistente / erro (78)
+ERRO 2353553 inexistente / erro (79)
+ERRO 2353554 inexistente / erro (80)
+Limite de falhas consecutivas atingido
+Execução terminada com sucesso.
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   atualizar_fpf.log
+	modified:   atualizar_zerozero_selenium.py
+	modified:   corrigir_clubes_intervalo.py
+	modified:   jogadores_fpf.sqbpro
+	modified:   templates/index.html.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	__pycache__/
+	atualizar_datas_nascimento_excel.py
+	atualizar_escalao.py
+	atualizar_participacao_epoca_atual.py
+	datas_nascimento_clube.xlsx
+	ids_em_falta.py
+	ids_em_falta.txt
+	recuperar_ids_em_falta.py
+	scraper_zerozero_piloto.py
+	zerozero_clubes.db
+	zerozero_clubes.py
+	zerozero_clubes.sqbpro
+	zerozero_index.db
+	zerozero_index.sqbpro
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Clubes carregados: 2060
+ERRO 2353475 inexistente / erro (1)
+ERRO 2353476 inexistente / erro (2)
+ERRO 2353477 inexistente / erro (3)
+ERRO 2353478 inexistente / erro (4)
+ERRO 2353479 inexistente / erro (5)
+ERRO 2353480 inexistente / erro (6)
+ERRO 2353481 inexistente / erro (7)
+ERRO 2353482 inexistente / erro (8)
+ERRO 2353483 inexistente / erro (9)
+ERRO 2353484 inexistente / erro (10)
+ERRO 2353485 inexistente / erro (11)
+ERRO 2353486 inexistente / erro (12)
+ERRO 2353487 inexistente / erro (13)
+ERRO 2353488 inexistente / erro (14)
+ERRO 2353489 inexistente / erro (15)
+ERRO 2353490 inexistente / erro (16)
+ERRO 2353491 inexistente / erro (17)
+ERRO 2353492 inexistente / erro (18)
+ERRO 2353493 inexistente / erro (19)
+ERRO 2353494 inexistente / erro (20)
+ERRO 2353495 inexistente / erro (21)
+ERRO 2353496 inexistente / erro (22)
+ERRO 2353497 inexistente / erro (23)
+ERRO 2353498 inexistente / erro (24)
+ERRO 2353499 inexistente / erro (25)
+ERRO 2353500 inexistente / erro (26)
+ERRO 2353501 inexistente / erro (27)
+ERRO 2353502 inexistente / erro (28)
+ERRO 2353503 inexistente / erro (29)
+ERRO 2353504 inexistente / erro (30)
+ERRO 2353505 inexistente / erro (31)
+ERRO 2353506 inexistente / erro (32)
+ERRO 2353507 inexistente / erro (33)
+ERRO 2353508 inexistente / erro (34)
+ERRO 2353509 inexistente / erro (35)
+ERRO 2353510 inexistente / erro (36)
+ERRO 2353511 inexistente / erro (37)
+ERRO 2353512 inexistente / erro (38)
+ERRO 2353513 inexistente / erro (39)
+ERRO 2353514 inexistente / erro (40)
+ERRO 2353515 inexistente / erro (41)
+ERRO 2353516 inexistente / erro (42)
+ERRO 2353517 inexistente / erro (43)
+ERRO 2353518 inexistente / erro (44)
+ERRO 2353519 inexistente / erro (45)
+ERRO 2353520 inexistente / erro (46)
+ERRO 2353521 inexistente / erro (47)
+ERRO 2353522 inexistente / erro (48)
+ERRO 2353523 inexistente / erro (49)
+ERRO 2353524 inexistente / erro (50)
+ERRO 2353525 inexistente / erro (51)
+ERRO 2353526 inexistente / erro (52)
+ERRO 2353527 inexistente / erro (53)
+ERRO 2353528 inexistente / erro (54)
+ERRO 2353529 inexistente / erro (55)
+ERRO 2353530 inexistente / erro (56)
+ERRO 2353531 inexistente / erro (57)
+ERRO 2353532 inexistente / erro (58)
+ERRO 2353533 inexistente / erro (59)
+ERRO 2353534 inexistente / erro (60)
+ERRO 2353535 inexistente / erro (61)
+ERRO 2353536 inexistente / erro (62)
+ERRO 2353537 inexistente / erro (63)
+ERRO 2353538 inexistente / erro (64)
+ERRO 2353539 inexistente / erro (65)
+ERRO 2353540 inexistente / erro (66)
+ERRO 2353541 inexistente / erro (67)
+ERRO 2353542 inexistente / erro (68)
+ERRO 2353543 inexistente / erro (69)
+ERRO 2353544 inexistente / erro (70)
+ERRO 2353545 inexistente / erro (71)
+ERRO 2353546 inexistente / erro (72)
+ERRO 2353547 inexistente / erro (73)
+ERRO 2353548 inexistente / erro (74)
+ERRO 2353549 inexistente / erro (75)
+ERRO 2353550 inexistente / erro (76)
+ERRO 2353551 inexistente / erro (77)
+ERRO 2353552 inexistente / erro (78)
+ERRO 2353553 inexistente / erro (79)
+ERRO 2353554 inexistente / erro (80)
+Limite de falhas consecutivas atingido
+Execução terminada com sucesso.
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   atualizar_fpf.log
+	modified:   atualizar_zerozero_selenium.py
+	modified:   corrigir_clubes_intervalo.py
+	modified:   jogadores_fpf.sqbpro
+	modified:   templates/index.html.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	__pycache__/
+	atualizar_datas_nascimento_excel.py
+	atualizar_escalao.py
+	atualizar_participacao_epoca_atual.py
+	datas_nascimento_clube.xlsx
+	ids_em_falta.py
+	ids_em_falta.txt
+	recuperar_ids_em_falta.py
+	scraper_zerozero_piloto.py
+	zerozero_clubes.db
+	zerozero_clubes.py
+	zerozero_clubes.sqbpro
+	zerozero_index.db
+	zerozero_index.sqbpro
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Clubes carregados: 2060
+ERRO 2353475 inexistente / erro (1)
+ERRO 2353476 inexistente / erro (2)
+ERRO 2353477 inexistente / erro (3)
+ERRO 2353478 inexistente / erro (4)
+ERRO 2353479 inexistente / erro (5)
+ERRO 2353480 inexistente / erro (6)
+ERRO 2353481 inexistente / erro (7)
+ERRO 2353482 inexistente / erro (8)
+ERRO 2353483 inexistente / erro (9)
+ERRO 2353484 inexistente / erro (10)
+ERRO 2353485 inexistente / erro (11)
+ERRO 2353486 inexistente / erro (12)
+ERRO 2353487 inexistente / erro (13)
+ERRO 2353488 inexistente / erro (14)
+ERRO 2353489 inexistente / erro (15)
+ERRO 2353490 inexistente / erro (16)
+ERRO 2353491 inexistente / erro (17)
+ERRO 2353492 inexistente / erro (18)
+ERRO 2353493 inexistente / erro (19)
+ERRO 2353494 inexistente / erro (20)
+ERRO 2353495 inexistente / erro (21)
+ERRO 2353496 inexistente / erro (22)
+ERRO 2353497 inexistente / erro (23)
+ERRO 2353498 inexistente / erro (24)
+ERRO 2353499 inexistente / erro (25)
+ERRO 2353500 inexistente / erro (26)
+ERRO 2353501 inexistente / erro (27)
+ERRO 2353502 inexistente / erro (28)
+ERRO 2353503 inexistente / erro (29)
+ERRO 2353504 inexistente / erro (30)
+ERRO 2353505 inexistente / erro (31)
+ERRO 2353506 inexistente / erro (32)
+ERRO 2353507 inexistente / erro (33)
+ERRO 2353508 inexistente / erro (34)
+ERRO 2353509 inexistente / erro (35)
+ERRO 2353510 inexistente / erro (36)
+ERRO 2353511 inexistente / erro (37)
+ERRO 2353512 inexistente / erro (38)
+ERRO 2353513 inexistente / erro (39)
+ERRO 2353514 inexistente / erro (40)
+ERRO 2353515 inexistente / erro (41)
+ERRO 2353516 inexistente / erro (42)
+ERRO 2353517 inexistente / erro (43)
+ERRO 2353518 inexistente / erro (44)
+ERRO 2353519 inexistente / erro (45)
+ERRO 2353520 inexistente / erro (46)
+ERRO 2353521 inexistente / erro (47)
+ERRO 2353522 inexistente / erro (48)
+ERRO 2353523 inexistente / erro (49)
+ERRO 2353524 inexistente / erro (50)
+ERRO 2353525 inexistente / erro (51)
+ERRO 2353526 inexistente / erro (52)
+ERRO 2353527 inexistente / erro (53)
+ERRO 2353528 inexistente / erro (54)
+ERRO 2353529 inexistente / erro (55)
+ERRO 2353530 inexistente / erro (56)
+ERRO 2353531 inexistente / erro (57)
+ERRO 2353532 inexistente / erro (58)
+ERRO 2353533 inexistente / erro (59)
+ERRO 2353534 inexistente / erro (60)
+ERRO 2353535 inexistente / erro (61)
+ERRO 2353536 inexistente / erro (62)
+ERRO 2353537 inexistente / erro (63)
+ERRO 2353538 inexistente / erro (64)
+ERRO 2353539 inexistente / erro (65)
+ERRO 2353540 inexistente / erro (66)
+ERRO 2353541 inexistente / erro (67)
+ERRO 2353542 inexistente / erro (68)
+ERRO 2353543 inexistente / erro (69)
+ERRO 2353544 inexistente / erro (70)
+ERRO 2353545 inexistente / erro (71)
+ERRO 2353546 inexistente / erro (72)
+ERRO 2353547 inexistente / erro (73)
+ERRO 2353548 inexistente / erro (74)
+ERRO 2353549 inexistente / erro (75)
+ERRO 2353550 inexistente / erro (76)
+ERRO 2353551 inexistente / erro (77)
+ERRO 2353552 inexistente / erro (78)
+ERRO 2353553 inexistente / erro (79)
+ERRO 2353554 inexistente / erro (80)
+Limite de falhas consecutivas atingido
+Execução terminada com sucesso.
+Clubes carregados: 2060
+ERRO 2353475 inexistente / erro (1)
+ERRO 2353476 inexistente / erro (2)
+ERRO 2353477 inexistente / erro (3)
+ERRO 2353478 inexistente / erro (4)
+ERRO 2353479 inexistente / erro (5)
+ERRO 2353480 inexistente / erro (6)
+ERRO 2353481 inexistente / erro (7)
+ERRO 2353482 inexistente / erro (8)
+ERRO 2353483 inexistente / erro (9)
+ERRO 2353484 inexistente / erro (10)
+ERRO 2353485 inexistente / erro (11)
+ERRO 2353486 inexistente / erro (12)
+ERRO 2353487 inexistente / erro (13)
+Traceback (most recent call last):
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connection.py", line 565, in getresponse
+    httplib_response = super().getresponse()
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\http\client.py", line 1430, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\http\client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\http\client.py", line 292, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+TimeoutError: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 284, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 243, in main
+    dados = obter_dados_jogador(driver, pid)
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 184, in obter_dados_jogador
+    driver.get(f"{BASE_URL}{pid}")
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 483, in get
+    self.execute(Command.GET, {"url": url})
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 455, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 406, in execute
+    return self._request(command_info[0], url, body=data)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 430, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        method, url, fields=fields, headers=headers, **urlopen_kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\poolmanager.py", line 459, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\util\retry.py", line 474, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\util\util.py", line 39, in reraise
+    raise value
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 536, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py", line 367, in _raise_timeout
+    raise ReadTimeoutError(
+        self, url, f"Read timed out. (read timeout={timeout_value})"
+    ) from err
+urllib3.exceptions.ReadTimeoutError: HTTPConnectionPool(host='localhost', port=64773): Read timed out. (read timeout=120)
+Traceback (most recent call last):
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 278, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 241, in main
+    mapa_clubes = carregar_mapa_clubes()
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 109, in carregar_mapa_clubes
+    print(f"\u2705 Clubes carregados: {len(mapa)}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
+Traceback (most recent call last):
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 278, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 241, in main
+    mapa_clubes = carregar_mapa_clubes()
+  File "C:\Users\augusto.roxo\Documents\Scripts\BD\atualizar_fpf.py", line 109, in carregar_mapa_clubes
+    print(f"\u2705 Clubes carregados: {len(mapa)}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\augusto.roxo\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
