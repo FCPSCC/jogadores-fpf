@@ -65,20 +65,32 @@ def normalizar_escalao(txt):
 # LOGIN
 # ======================================================
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    erro = None
-    if request.method == "POST":
-        if request.form.get("password") == SITE_PASSWORD:
-            session["autenticado"] = True
-            return redirect("/")
-        erro = "Password incorreta"
-    return render_template("login.html", erro=erro)
+@app.route("/")
+def index():
+    if not session.get("autenticado"):
+        return redirect("/login")
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
+    filtros = {
+        "nome": "",
+        "clube": "",
+        "ano_nasc": "",
+        "distrito": "",
+        "naturalidade": "",
+        "categoria": "",
+        "escalao": ""
+    }
+
+    return render_template(
+        "index.html",
+        filtros=filtros,
+        jogadores=[],
+        total=0,
+        categorias=[],
+        escalaoes_fpf=[],
+        distritos=[],
+        naturalidades=[],
+        page=0
+    )
 
 # ======================================================
 # INDEX
