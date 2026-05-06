@@ -163,6 +163,8 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     jogadores = []
     for r in rows:
+    categoria = calcular_categoria_por_ano(r["ano_nascimento"])
+
         jogadores.append((
             r["player_id"],
             r["nome"],
@@ -251,10 +253,14 @@ def ficha_jogador(player_id):
     rows = cur.fetchall()
 
     # Flag época atual
-    tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
+    tem_epoca_atual = any(
+    r["epoca"] == "2025/26" and (r["jogos"] or r["golos"])
+    for r in rows
+)
+
 
     cat_teorica = calcular_categoria_por_ano(jogador["ano_nascimento"])
-    escalao_teorico = extrair_numero_escalao(cat_teorica)
+    escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
 
     historico_formatado = []
     epoca_anterior = None
@@ -285,8 +291,8 @@ def ficha_jogador(player_id):
         historico_formatado.append({
             "epoca": epoca_mostrar,
             "competicao": row["competicao"],
-            "jogos": row["jogos"],
-            "golos": row["golos"],
+            "jogos": row["jogos"] if row["jogos"] is not None else 0,
+            "golos": row["golos"] if row["golos"] is not None else 0,
             "acima": acima
         })
 
