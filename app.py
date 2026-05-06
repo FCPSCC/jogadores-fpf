@@ -121,7 +121,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     # ✅ CORREÇÃO AQUI (indentação e formato simples)
     if f.get("acima_escalao") == "1":
-        filtros_sql += " AND player_id IN (SELECT player_id FROM participacao_epoca_atual WHERE epoca = '2025/2026')"
+    filtros_sql += " AND player_id IN (SELECT player_id FROM participacao_epoca_atual)"
 
     # TOTAL
     cur.execute(
