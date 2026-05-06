@@ -285,41 +285,40 @@ def ficha_jogador(player_id):
     WHERE m.player_id_fpf = %s
     ORDER BY e.epoca DESC, e.competicao
 """, (player_id,))
-rows = cur.fetchall()
 
-historico_formatado = []
-epoca_anterior = None
+rows = cur.fetchall()    rows = cur.fetchall_formatado = []
+    epoca_anterior = None
 
-for row in rows:
-    epoca = row["epoca"]
+    for row in rows:
+        epoca = row["epoca"]
 
-    if epoca != epoca_anterior:
-        epoca_mostrar = epoca
-        epoca_anterior = epoca
-    else:
-        epoca_mostrar = ""
+        if epoca != epoca_anterior:
+            epoca_mostrar = epoca
+            epoca_anterior = epoca
+        else:
+            epoca_mostrar = ""
 
-    escalao_encontrado = None
-    match = re.search(r"S(\d+)", row["competicao"])
-    if match:
-        escalao_encontrado = int(match.group(1))
+        escalao_encontrado = None
+        match = re.search(r"S(\d+)", row["competicao"])
+        if match:
+            escalao_encontrado = int(match.group(1))
 
-    acima = False
-    if (
-        epoca == "2025/26" and
-        escalao_encontrado is not None and
-        escalao_teorico is not None and
-        escalao_encontrado > escalao_teorico
-    ):
-        acima = True
+        acima = False
+        if (
+            epoca == "2025/26" and
+            escalao_encontrado is not None and
+            escalao_teorico is not None and
+            escalao_encontrado > escalao_teorico
+        ):
+            acima = True
 
-    historico_formatado.append({
-        "epoca": epoca_mostrar,
-        "competicao": row["competicao"],
-        "jogos": row["jogos"],
-        "golos": row["golos"],
-        "acima": acima
-    })
+        historico_formatado.append({
+            "epoca": epoca_mostrar,
+            "competicao": row["competicao"],
+            "jogos": row["jogos"],
+            "golos": row["golos"],
+            "acima": acima
+        })
 
 import re
 
