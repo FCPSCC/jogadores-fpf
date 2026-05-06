@@ -228,11 +228,10 @@ f = {
     "acima_escalao": request.args.get("acima_escalao", "")
 }
 
-
-    sort_col = request.args.get("sort", "player_id")
-    sort_dir = request.args.get("dir", "desc")
-    page = int(request.args.get("page", 0))
-    offset = page * 100
+sort_col = request.args.get("sort", "player_id")
+sort_dir = request.args.get("dir", "desc")
+page = int(request.args.get("page", 0))
+offset = page * 100
 
     jogadores = []
     total = 0
