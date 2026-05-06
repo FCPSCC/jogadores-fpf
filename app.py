@@ -288,17 +288,42 @@ def ficha_jogador(player_id):
     rows = cur.fetchall()
 
 
-    historico_formatado = []
-    epoca_anterior = None
+   historico_formatado = []
+epoca_anterior = None
 
-    for row in rows:
-        epoca = row["epoca"]
+for row in rows:
+    epoca = row["epoca"]
 
-        if epoca != epoca_anterior:
-            epoca_mostrar = epoca
-            epoca_anterior = epoca
-        else:
-            epoca_mostrar = ""
+    if epoca != epoca_anterior:
+        epoca_mostrar = epoca
+        epoca_anterior = epoca
+    else:
+        epoca_mostrar = ""
+
+    # ✅ extrair escalão (ex: S15)
+    escalao_encontrado = None
+    match = re.search(r"S(\d+)", row["competicao"])
+    if match:
+        escalao_encontrado = int(match.group(1))
+
+    # ✅ calcular se joga acima
+    acima = False
+    if (
+        epoca == "2025/26" and
+        escalao_encontrado is not None and
+        escalao_teorico is not None and
+        escalao_encontrado > escalao_teorico
+    ):
+        acima = True
+
+    # ✅ adicionar à lista final
+    historico_formatado.append({
+        "epoca": epoca_mostrar,
+        "competicao": row["competicao"],
+        "jogos": row["jogos"],
+        "golos": row["golos"],
+        "acima": acima
+    })
 
 import re
 
