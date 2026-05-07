@@ -304,7 +304,7 @@ def ficha_jogador(player_id):
         jogador=jogador,
         historico_zz=historico_formatado,
         escalao_teorico=escalao_teorico,
-        tem_epoca_atual=tem_epoca_atual
+        tem_epoca_atual=tem_epoca_atual,
         foto_url=foto_url
     )
 
