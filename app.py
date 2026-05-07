@@ -224,6 +224,7 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
+    # Jogador
     cur.execute(
         "SELECT * FROM jogadores WHERE player_id = %s",
         (player_id,)
@@ -233,6 +234,7 @@ def ficha_jogador(player_id):
     if not jogador:
         return "Jogador não encontrado", 404
 
+    # Histórico
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
@@ -241,14 +243,15 @@ def ficha_jogador(player_id):
         WHERE m.player_id_fpf = %s
         ORDER BY e.epoca DESC, e.competicao
     """, (player_id,))
-
     rows = cur.fetchall()
 
+    # Flag época atual (corrigido)
     tem_epoca_atual = any(
-    r["epoca"] == "2025/26" and (r.get("jogos", 0) or r.get("golos", 0))
-    for r in rows
+        r["epoca"] == "2025/26" and ((r.get("jogos") or 0) > 0 or (r.get("golos") or 0) > 0)
+        for r in rows
     )
 
+    # Escalão teórico
     escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
 
     historico_formatado = []
@@ -284,9 +287,7 @@ def ficha_jogador(player_id):
             "acima": acima
         })
 
-    cur.close()
-    conn.close()
-
+    # Foto (ANTES de fechar cursor ✅)
     cur.execute("""
         SELECT foto_url
         FROM estatisticas_zerozero e
@@ -296,8 +297,11 @@ def ficha_jogador(player_id):
         LIMIT 1
     """, (player_id,))
     foto = cur.fetchone()
-
     foto_url = foto["foto_url"] if foto else None
+
+    # ✅ FECHAR AQUI (dentro da função)
+    cur.close()
+    conn.close()
 
     return render_template(
         "jogador.html",
