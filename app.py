@@ -244,7 +244,10 @@ def ficha_jogador(player_id):
 
     rows = cur.fetchall()
 
-    tem_epoca_atual = any(r["epoca"] == "2025/26" for r in rows)
+    tem_epoca_atual = any(
+    r["epoca"] == "2025/26" and (r.get("jogos", 0) or r.get("golos", 0))
+    for r in rows
+    )
 
     escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
 
@@ -284,12 +287,25 @@ def ficha_jogador(player_id):
     cur.close()
     conn.close()
 
+    cur.execute("""
+        SELECT foto_url
+        FROM estatisticas_zerozero e
+        JOIN match_zerozero_fpf m
+            ON e.player_id = m.id_zerozero_atleta
+        WHERE m.player_id_fpf = %s
+        LIMIT 1
+    """, (player_id,))
+    foto = cur.fetchone()
+
+    foto_url = foto["foto_url"] if foto else None
+
     return render_template(
         "jogador.html",
         jogador=jogador,
         historico_zz=historico_formatado,
         escalao_teorico=escalao_teorico,
         tem_epoca_atual=tem_epoca_atual
+        foto_url=foto_url
     )
 
 

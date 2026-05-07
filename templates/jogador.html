@@ -159,10 +159,10 @@ a:hover { text-decoration: underline; }
 <div class="player-header {% if jogador['clube'] and 'porto' in jogador['clube']|lower %}porto{% endif %}">
     <div class="photo">
         <img
-            src="{{ zz['foto_url'] if zz and zz['foto_url'] else url_for('static', filename='sem_foto.png') }}"
-            alt="Foto do jogador"
-            onerror="this.src='{{ url_for('static', filename='sem_foto.png') }}';"
-        >
+    src="{{ foto_url if foto_url else url_for('static', filename='sem_foto.png') }}"
+    alt="Foto do jogador"
+    onerror="this.src='{{ url_for('static', filename='sem_foto.png') }}';"
+    >
     </div>
 
     <div>
@@ -213,9 +213,10 @@ a:hover { text-decoration: underline; }
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
+    {% if not tem_epoca_atual %}
     <p>Sem registos de participação na época corrente.</p>
     {% endif %}
+
 </div>
 <!-- =============================
 RESUMO GLOBAL ZEROZERO
