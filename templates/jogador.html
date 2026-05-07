@@ -148,6 +148,17 @@ a:hover { text-decoration: underline; }
 </style>
 </head>
 
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>{{ jogador["nome"] }}</title>
+
+<style>
+/* (ESTILO FICA IGUAL — não mexi) */
+</style>
+</head>
+
 <body>
 <div class="container">
 
@@ -159,12 +170,11 @@ a:hover { text-decoration: underline; }
 <div class="player-header {% if jogador['clube'] and 'porto' in jogador['clube']|lower %}porto{% endif %}">
     <div class="photo">
         <img
-    src="{{ foto_url if foto_url else url_for('static', filename='sem_foto.png') }}"
-    alt="Foto do jogador"
-    onerror="this.src='{{ url_for('static', filename='sem_foto.png') }}';"
-    >
+            src="{{ foto_url if foto_url else url_for('static', filename='sem_foto.png') }}"
+            alt="Foto do jogador"
+            onerror="this.src='{{ url_for('static', filename='sem_foto.png') }}';"
+        >
     </div>
-
 
     <div>
         <div class="player-name">{{ jogador["nome"] }}</div>
@@ -187,6 +197,10 @@ a:hover { text-decoration: underline; }
 <!-- HISTÓRICO COMPETITIVO -->
 <div class="section">
     <div class="section-title">Época 2025/26 · Histórico competitivo (ZeroZero)</div>
+
+    {% if not tem_epoca_atual %}
+        <p>Sem registos de participação na época corrente.</p>
+    {% endif %}
 
     {% if participacao %}
     <table class="table-historico">
@@ -214,78 +228,58 @@ a:hover { text-decoration: underline; }
             {% endfor %}
         </tbody>
     </table>
-    {% if not tem_epoca_atual %}
-    <p>Sem registos de participação na época corrente.</p>
-    {% endif %}
-
-</div>
-<!-- =============================
-RESUMO GLOBAL ZEROZERO
-============================= -->
-{% if resumo_zz %}
-<div class="section">
-    <div class="section-title">Resumo Global ZeroZero</div>
-
-    <p><strong>Total Jogos:</strong> {{ resumo_zz["total_jogos"] }}</p>
-    <p><strong>Total Golos:</strong> {{ resumo_zz["total_golos"] }}</p>
-
-    {% if resumo_zz["joga_acima"] == 1 %}
-        <div class="badge-up">
-            🔺 Também identificado como acima (ZeroZero)
-        </div>
     {% endif %}
 </div>
-{% endif %}
 
-<!-- =============================
-HISTÓRICO COMPLETO ZEROZERO
-============================= -->
+<!-- HISTÓRICO ZEROZERO -->
 <h3>Histórico ZeroZero</h3>
 
 <table style="width:100%; border-collapse: collapse;">
-    <tr style="background-color:#eee;">
-        <th style="text-align:left; padding:6px;">Época</th>
-        <th style="text-align:left; padding:6px;">Competição</th>
-        <th style="text-align:right; padding:6px;">J</th>
-        <th style="text-align:right; padding:6px;">G</th>
-    </tr>
+<tr style="background-color:#eee;">
+    <th style="text-align:left; padding:6px;">Época</th>
+    <th style="text-align:left; padding:6px;">Competição</th>
+    <th style="text-align:right; padding:6px;">J</th>
+    <th style="text-align:right; padding:6px;">G</th>
+</tr>
 
-    {% for linha in historico_zz %}
+{% for linha in historico_zz %}
 
-    {% if linha.epoca %}
-    <tr>
-        <td colspan="4" style="background:#f5f5f5; height:6px;"></td>
-    </tr>
-    {% endif %}
+{% if linha.epoca %}
+<tr>
+    <td colspan="4" style="background:#f5f5f5; height:6px;"></td>
+</tr>
+{% endif %}
 
-    <tr style="border-bottom: 1px solid #ddd;">
-        <td style="padding:6px; font-weight:bold;">
-            {{ linha.epoca }}
-        <td>
-    {{ linha.competicao }}
+<tr style="border-bottom: 1px solid #ddd;">
+    <td style="padding:6px; font-weight:bold;">
+        {{ linha.epoca }}
+    </td>
 
-    {% if linha.acima %}
-        <span style="background:#ffe6e6; color:#b30000; padding:2px 6px; border-radius:4px;">
-            ↑ Acima
-        </span>
-    {% endif %}
-</td>
-        <td style="padding:6px; text-align:right;">
-            {{ linha.jogos }}
-        </td>
-        <td style="padding:6px; text-align:right;">
-            {{ linha.golos }}
-        </td>
-    </tr>
+    <td>
+        {{ linha.competicao }}
+        {% if linha.acima %}
+            <span style="background:#ffe6e6; color:#b30000; padding:2px 6px; border-radius:4px;">
+                ↑ Acima
+            </span>
+        {% endif %}
+    </td>
 
-    {% endfor %}
+    <td style="padding:6px; text-align:right;">
+        {{ linha.jogos }}
+    </td>
+
+    <td style="padding:6px; text-align:right;">
+        {{ linha.golos }}
+    </td>
+</tr>
+
+{% endfor %}
 </table>
 
 <div class="footer">
     <div>ID interno: {{ jogador["player_id"] }}</div>
     <div>FPF + ZeroZero</div>
 </div>
-{% endif %}
 
 </div>
 </body>
