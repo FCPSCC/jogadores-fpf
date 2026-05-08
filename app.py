@@ -224,17 +224,23 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
-    # Jogador
-    cur.execute(
-        "SELECT * FROM jogadores WHERE player_id = %s",
-        (player_id,)
-    )
+    # =========================
+    # DADOS DO JOGADOR (FPF)
+    # =========================
+    cur.execute("""
+        SELECT *
+        FROM jogadores
+        WHERE player_id = %s
+    """, (player_id,))
+
     jogador = cur.fetchone()
 
     if not jogador:
         return "Jogador não encontrado", 404
 
-    # Histórico
+    # =========================
+    # HISTÓRICO ZEROZERO
+    # =========================
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
@@ -243,29 +249,17 @@ def ficha_jogador(player_id):
         WHERE m.player_id_fpf = %s
         ORDER BY e.epoca DESC, e.competicao
     """, (player_id,))
+
     rows = cur.fetchall()
 
-
-    # ✅ 1. ir buscar ID do ZeroZero
-    cur.execute("""
-        SELECT id_zerozero_atleta
-        FROM match_zerozero_fpf
-        WHERE player_id_fpf = %s
-        LIMIT 1
-    """, (player_id,))
-
-    row = cur.fetchone()
-    id_zerozero = row["id_zerozero_atleta"] if row else None
-
-    # ✅ FOTO (VERSÃO CORRETA E SEM ERROS)
-
-    foto_url = None
-
+    # =========================
+    # FOTO (SIMPLES E CORRETO)
+    # =========================
     cur.execute("""
         SELECT z.foto_url
-        FROM zerozero_atleta z
-        JOIN match_zerozero_fpf m
-            ON z.id_zerozero_atleta = m.id_zerozero_atleta
+        FROM match_zerozero_fpf m
+        JOIN zerozero_atleta z
+            ON m.id_zerozero_atleta = z.id_zerozero_atleta
         WHERE m.player_id_fpf = %s
         LIMIT 1
     """, (player_id,))
@@ -275,16 +269,22 @@ def ficha_jogador(player_id):
 
     print("DEBUG FOTO:", foto_url)
 
-
-    # Flag época atual (corrigido)
+    # =========================
+    # FLAG ÉPOCA ATUAL
+    # =========================
     tem_epoca_atual = any(
-        r["epoca"] == "2025/26" and ((r.get("jogos") or 0) > 0 or (r.get("golos") or 0) > 0)
+        r["epoca"] == "2025/26"
         for r in rows
     )
 
-    # Escalão teórico
+    # =========================
+    # ESCALÃO TEÓRICO
+    # =========================
     escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
 
+    # =========================
+    # FORMATAR HISTÓRICO
+    # =========================
     historico_formatado = []
     epoca_anterior = None
 
@@ -318,31 +318,6 @@ def ficha_jogador(player_id):
             "acima": acima
         })
 
-
-    resumo_2025 = {
-        "jogos": 0,
-        "golos": 0
-}
-
-    for r in rows:
-        if r["epoca"] == "2025/26":
-            resumo_2025["jogos"] += r.get("jogos") or 0
-            resumo_2025["golos"] += r.get("golos") or 0
-
-
-    # Foto (ANTES de fechar cursor ✅)
-    cur.execute("""
-        SELECT foto_url
-        FROM estatisticas_zerozero e
-        JOIN match_zerozero_fpf m
-            ON e.player_id = m.id_zerozero_atleta
-        WHERE m.player_id_fpf = %s
-        LIMIT 1
-    """, (player_id,))
-    foto = cur.fetchone()
-    foto_url = foto["foto_url"] if foto else None
-
-    # ✅ FECHAR AQUI (dentro da função)
     cur.close()
     conn.close()
 
@@ -352,9 +327,7 @@ def ficha_jogador(player_id):
         historico_zz=historico_formatado,
         escalao_teorico=escalao_teorico,
         tem_epoca_atual=tem_epoca_atual,
-        foto_url=foto_url,
-        resumo_2025=resumo_2025
-
+        foto_url=foto_url
     )
 
 
