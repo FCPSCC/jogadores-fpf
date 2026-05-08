@@ -259,21 +259,21 @@ def ficha_jogador(player_id):
 
     # ✅ FOTO (VERSÃO CORRETA E SEM ERROS)
 
-foto_url = None
+    foto_url = None
 
-cur.execute("""
-    SELECT z.foto_url
-    FROM zerozero_atleta z
-    JOIN match_zerozero_fpf m
-        ON z.id_zerozero_atleta = m.id_zerozero_atleta
-    WHERE m.player_id_fpf = %s
-    LIMIT 1
-""", (player_id,))
+    cur.execute("""
+        SELECT z.foto_url
+        FROM zerozero_atleta z
+        JOIN match_zerozero_fpf m
+            ON z.id_zerozero_atleta = m.id_zerozero_atleta
+        WHERE m.player_id_fpf = %s
+        LIMIT 1
+    """, (player_id,))
 
-foto = cur.fetchone()
-foto_url = foto["foto_url"] if foto else None
+    foto = cur.fetchone()
+    foto_url = foto["foto_url"] if foto else None
 
-print("DEBUG FOTO:", foto_url)
+    print("DEBUG FOTO:", foto_url)
 
 
     # Flag época atual (corrigido)
