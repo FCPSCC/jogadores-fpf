@@ -1,26 +1,21 @@
 # -*- coding: utf-8 -*-
 
 import os
-import re
 import time
 import psycopg2
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.firefox import GeckoDriverManager
 
 # ======================================================
 # CONFIG
 # ======================================================
 
 DATABASE_URL = os.environ["DATABASE_URL"]
-FIREFOX_BINARY = r"C:\Users\augusto.roxo\AppData\Local\Mozilla Firefox\firefox.exe"
-
 WAIT_TIMEOUT = 10
 DELAY = 1
 
@@ -28,24 +23,14 @@ DELAY = 1
 # BD
 # ======================================================
 
-def obter_atletas(conn, limite=None):
+def obter_atletas(conn):
     cur = conn.cursor()
-
-    sql = """
-    SELECT id_zerozero_atleta, url_zerozero
-    FROM zerozero_atleta
-    WHERE ultima_atualizacao IS NULL
-       OR ultima_atualizacao < NOW() - INTERVAL '1 day'
-    ORDER BY ultima_atualizacao NULLS FIRST
-    """
-
-    if limite:
-        sql += " LIMIT %s"
-        cur.execute(sql, (limite,))
-    else:
-        cur.execute(sql)
-
+    cur.execute("""
+        SELECT id_zerozero_atleta, url_zerozero
+        FROM zerozero_atleta
+    """)
     return cur.fetchall()
+
 
 def marcar_atualizado(conn, atleta_id):
     cur = conn.cursor()
@@ -58,10 +43,10 @@ def marcar_atualizado(conn, atleta_id):
 
 def limpar_estatisticas(conn, atleta_id):
     cur = conn.cursor()
-    cur.execute(
-        "DELETE FROM estatisticas_zerozero WHERE player_id = %s",
-        (atleta_id,)
-    )
+    cur.execute("""
+        DELETE FROM estatisticas_zerozero
+        WHERE player_id = %s
+    """, (atleta_id,))
 
 
 def inserir(conn, d):
@@ -80,37 +65,51 @@ def inserir(conn, d):
     ))
 
 # ======================================================
-# DRIVER
+# DRIVER (SIMPLIFICADO E ESTÁVEL)
 # ======================================================
 
 def criar_driver():
     opts = Options()
-    opts.add_argument("--headless")
-    opts.binary_location = FIREFOX_BINARY
+    opts.add_argument("--headless")  # comenta isto se quiseres ver browser
 
-    service = Service(GeckoDriverManager().install())
-    return webdriver.Firefox(service=service, options=opts)
+    return webdriver.Firefox(options=opts)
 
 # ======================================================
-# EXTRAÇÃO CORRETA
+# EXTRAÇÃO
 # ======================================================
 
 def extrair_estatisticas(driver, player_id):
     html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
 
-    # ✅ 👉 CONTAINER EXATO QUE ENVIASTE
+    # ✅ FOTO (via source - método robusto)
+    foto_url = None
+
+    meta = soup.find("meta", property="og:image")
+
+    if meta:
+        url = meta.get("content")
+
+        if url and str(player_id) in url:
+            foto_url = url
+
+    if not foto_url and meta:
+        foto_url = meta.get("content")
+
+    print(f"📸 FOTO {player_id}: {foto_url}")
+
+    # ✅ TABELA
     container = soup.select_one("#coach_career")
 
     if not container:
-        print("❌ container #coach_career não encontrado")
-        return []
+        print("❌ container não encontrado")
+        return [], foto_url
 
     tabela = container.select_one("table.career")
 
     if not tabela:
-        print("❌ tabela career não encontrada")
-        return []
+        print("❌ tabela não encontrada")
+        return [], foto_url
 
     rows = tabela.select("tbody tr")
 
@@ -123,7 +122,6 @@ def extrair_estatisticas(driver, player_id):
         if len(cols) < 4:
             continue
 
-        # ✅ coluna da época
         epoca = cols[1].get_text(strip=True)
 
         if epoca:
@@ -132,10 +130,8 @@ def extrair_estatisticas(driver, player_id):
         if not epoca_atual:
             continue
 
-        # ✅ equipa + escalão
-        equipa = cols[2].get_text(" ", strip=True)
+        competicao = cols[2].get_text(" ", strip=True)
 
-        # ✅ jogos e golos
         jogos = cols[3].get_text(strip=True)
         golos = cols[4].get_text(strip=True)
 
@@ -145,15 +141,15 @@ def extrair_estatisticas(driver, player_id):
         dados.append({
             "player_id": player_id,
             "epoca": epoca_atual,
-            "competicao": equipa,
+            "competicao": competicao,
             "jogos": jogos,
             "golos": golos
         })
 
-    return dados
+    return dados, foto_url
 
 # ======================================================
-# PROCESSAR ATLETA
+# PROCESSAR
 # ======================================================
 
 def processar_atleta(driver, conn, atleta_id, url):
@@ -166,21 +162,32 @@ def processar_atleta(driver, conn, atleta_id, url):
             EC.presence_of_element_located((By.ID, "coach_career"))
         )
     except:
-        print("❌ página não carregou corretamente")
+        print("❌ página não carregou")
         return
 
     time.sleep(1)
 
-    dados = extrair_estatisticas(driver, atleta_id)
+    dados, foto_url = extrair_estatisticas(driver, atleta_id)
 
     if not dados:
         print("⚠️ Sem dados")
         return
 
+    # ✅ GUARDAR FOTO (LOCAL CORRETO)
+    if foto_url:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE zerozero_atleta
+            SET foto_url = %s
+            WHERE id_zerozero_atleta = %s
+        """, (foto_url, atleta_id))
+
     limpar_estatisticas(conn, atleta_id)
 
     for d in dados:
         inserir(conn, d)
+
+    marcar_atualizado(conn, atleta_id)
 
     conn.commit()
 
@@ -192,7 +199,6 @@ def processar_atleta(driver, conn, atleta_id, url):
 
 def main():
     conn = psycopg2.connect(DATABASE_URL)
-    conn.autocommit = False
 
     driver = criar_driver()
 
@@ -201,7 +207,6 @@ def main():
     for atleta_id, url in atletas:
         try:
             processar_atleta(driver, conn, atleta_id, url)
-            marcar_atualizado(conn, atleta_id)
             time.sleep(DELAY)
         except Exception as e:
             print(f"❌ erro {atleta_id}: {e}")

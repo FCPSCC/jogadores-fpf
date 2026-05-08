@@ -196,9 +196,14 @@ a:hover { text-decoration: underline; }
 
 <!-- HISTÓRICO COMPETITIVO -->
 <div class="section">
-    <div class="section-title">Época 2025/26 · Histórico competitivo (ZeroZero)</div>
+    <div class="section-title">Época 2025/26 · Resumo competitivo (ZeroZero)</div>
 
-    {% if not tem_epoca_atual %}
+    {% if resumo_2025.jogos > 0 %}
+        <div style="margin-bottom:12px;">
+            <strong>Jogos:</strong> {{ resumo_2025.jogos }} |
+            <strong>Golos:</strong> {{ resumo_2025.golos }}
+        </div>
+    {% else %}
         <p>Sem registos de participação na época corrente.</p>
     {% endif %}
 
@@ -229,6 +234,7 @@ a:hover { text-decoration: underline; }
         </tbody>
     </table>
     {% endif %}
+
 </div>
 
 <!-- HISTÓRICO ZEROZERO -->

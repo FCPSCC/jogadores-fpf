@@ -245,6 +245,19 @@ def ficha_jogador(player_id):
     """, (player_id,))
     rows = cur.fetchall()
 
+    # ✅ FOTO (NOVO - correto)
+    cur.execute("""
+        SELECT z.foto_url
+        FROM zerozero_atleta z
+        JOIN match_zerozero_fpf m
+            ON z.id_zerozero_atleta = m.id_zerozero_atleta
+        WHERE m.player_id_fpf = %s
+    """, (player_id,))
+
+
+    foto = cur.fetchone()
+    foto_url = foto["foto_url"] if foto else None
+
     # Flag época atual (corrigido)
     tem_epoca_atual = any(
         r["epoca"] == "2025/26" and ((r.get("jogos") or 0) > 0 or (r.get("golos") or 0) > 0)
@@ -287,6 +300,18 @@ def ficha_jogador(player_id):
             "acima": acima
         })
 
+
+    resumo_2025 = {
+        "jogos": 0,
+        "golos": 0
+}
+
+    for r in rows:
+        if r["epoca"] == "2025/26":
+            resumo_2025["jogos"] += r.get("jogos") or 0
+            resumo_2025["golos"] += r.get("golos") or 0
+
+
     # Foto (ANTES de fechar cursor ✅)
     cur.execute("""
         SELECT foto_url
@@ -309,7 +334,9 @@ def ficha_jogador(player_id):
         historico_zz=historico_formatado,
         escalao_teorico=escalao_teorico,
         tem_epoca_atual=tem_epoca_atual,
-        foto_url=foto_url
+        foto_url=foto_url,
+        resumo_2025=resumo_2025
+
     )
 
 
