@@ -245,6 +245,32 @@ def ficha_jogador(player_id):
     """, (player_id,))
     rows = cur.fetchall()
 
+
+    # ✅ 1. ir buscar ID do ZeroZero
+    cur.execute("""
+        SELECT id_zerozero_atleta
+        FROM match_zerozero_fpf
+        WHERE player_id_fpf = %s
+        LIMIT 1
+    """, (player_id,))
+
+    row = cur.fetchone()
+    id_zerozero = row["id_zerozero_atleta"] if row else None
+
+    # ✅ 2. ir buscar a foto
+    foto_url = None
+
+    if id_zerozero:
+    cur.execute("""
+        SELECT foto_url
+        FROM zerozero_atleta
+        WHERE id_zerozero_atleta = %s
+    """, (id_zerozero,))
+
+    foto = cur.fetchone()
+    foto_url = foto["foto_url"] if foto else None
+
+
     # ✅ FOTO (NOVO - correto)
     cur.execute("""
         SELECT z.foto_url
@@ -257,6 +283,10 @@ def ficha_jogador(player_id):
 
     foto = cur.fetchone()
     foto_url = foto["foto_url"] if foto else None
+
+
+    print("DEBUG FOTO:", foto_url)
+
 
     # Flag época atual (corrigido)
     tem_epoca_atual = any(
