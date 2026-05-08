@@ -162,14 +162,14 @@ def index():
         "nome": request.args.get("nome", "").strip(),
         "clube": request.args.get("clube", "").strip(),
         "ano_nasc": request.args.get("ano_nasc", "").strip(),
-        "distrito": request.args.get("distrito", "").strip(),
-        "naturalidade": request.args.get("naturalidade", "").strip(),
-        "categoria": request.args.get("categoria", "").strip(),
-        "escalao": request.args.get("escalao_fpf", "").strip(),
+        "distrito": request.args.getlist("distrito[]"),
+        "naturalidade": request.args.getlist("naturalidade[]"),
+        "categoria": request.args.getlist("categoria[]"),
+        "escalao": request.args.getlist("escalao_fpf[]"),
         "acima_escalao": request.args.get("acima_escalao", "")
     }
 
-    page = int(request.args.get("page", 0))
+    page = int(request.args.get("page", 0) or 0)
     offset = page * 100
 
     jogadores = []
@@ -177,6 +177,10 @@ def index():
 
     if any(v for v in f.values()):
         jogadores, total = obter_jogadores(f, "player_id", "desc", offset)
+
+
+    total_paginas = (total // 100) + (1 if total % 100 else 0)
+
 
     cur.close()
     conn.close()
@@ -190,7 +194,8 @@ def index():
         categorias=categorias,
         escalaoes_fpf=escalaoes_fpf,
         distritos=distritos,
-        naturalidades=naturalidades
+        naturalidades=naturalidades,
+        total_paginas=total_paginas
     )
 
 # ✅ FICHA JOGADOR CORRIGIDA
@@ -231,7 +236,11 @@ def ficha_jogador(player_id):
     foto = cur.fetchone()
     foto_url = foto["foto_url"] if foto else None
 
-    escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
+    if jogador["ano_nascimento"]:
+        escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
+    else:
+        escalao_teorico = None
+
 
     historico_formatado = []
 
@@ -243,6 +252,7 @@ def ficha_jogador(player_id):
         if (
             row["epoca"] == "2025/26"
             and escalao_encontrado
+            and escalao_teorico is not None
             and escalao_teorico <= 19
             and escalao_encontrado > escalao_teorico
         ):

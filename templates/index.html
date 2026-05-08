@@ -62,7 +62,7 @@ function limpar(){
 <div class="checkbox-list" id="cat">
 {% for c in categorias %}
 <label>
-<input type="checkbox" name="categoria" value="{{ c }}"
+<input type="checkbox" name="categoria[]" value="{{ c }}"
 {% if c in filtros.categoria %}checked{% endif %}>
 {{ c }}
 </label><br>
@@ -81,7 +81,7 @@ function limpar(){
 <div class="checkbox-list" id="fpf">
 {% for e in escalaoes_fpf %}
 <label>
-<input type="checkbox" name="escalao_fpf" value="{{ e }}"
+<input type="checkbox" name="escalao_fpf[]" value="{{ e }}"
 {% if e in filtros.escalao_fpf %}checked{% endif %}>
 {{ e }}
 </label><br>
@@ -100,7 +100,7 @@ function limpar(){
 <div class="checkbox-list" id="dist">
 {% for d in distritos %}
 <label>
-<input type="checkbox" name="distrito" value="{{ d }}"
+<input type="checkbox" name="distrito[]" value="{{ d }}"
 {% if d in filtros.distrito %}checked{% endif %}>
 {{ d }}
 </label><br>
@@ -119,7 +119,7 @@ function limpar(){
 <div class="checkbox-list" id="nat">
 {% for n in naturalidades %}
 <label>
-<input type="checkbox" name="naturalidade" value="{{ n }}"
+<input type="checkbox" name="naturalidade[]" value="{{ n }}"
 {% if n in filtros.naturalidade %}checked{% endif %}>
 {{ n }}
 </label><br>
@@ -210,6 +210,24 @@ A competir acima do escalão
 {% endfor %}
 </tbody>
 </table>
+
+<div style="margin-top:20px; text-align:center;">
+
+{% if page > 0 %}
+<a href="?{{ request.query_string.decode().replace('page=' ~ page, 'page=' ~ (page-1)) }}">⬅️ Anterior</a>
+{% endif %}
+
+&nbsp;&nbsp;
+Página {{ page + 1 }} de {{ total_paginas }}
+&nbsp;&nbsp;
+
+{% if page + 1 < total_paginas %}
+<a href="?{{ request.query_string.decode().replace('page=' ~ page, 'page=' ~ (page+1)) }}">Seguinte ➡️</a>
+{% endif %}
+
+</div>
+
+
 
 </main>
 </body>
