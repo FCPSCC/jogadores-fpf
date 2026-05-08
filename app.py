@@ -8,34 +8,15 @@ import re
 import psycopg2
 import psycopg2.extras
 
-# ======================================================
-# APP
-# ======================================================
-
 app = Flask(__name__)
-app.secret_key = os.environ.get(
-    "SECRET_KEY",
-    "chave-temporaria-123"
-)
-
-SITE_PASSWORD = os.environ.get(
-    "SITE_PASSWORD",
-    "MUDAR123"
-)
-
-# ======================================================
-# BASE DE DADOS
-# ======================================================
+app.secret_key = os.environ.get("SECRET_KEY", "chave-temporaria-123")
+SITE_PASSWORD = os.environ.get("SITE_PASSWORD", "MUDAR123")
 
 def get_db():
     return psycopg2.connect(
         os.environ["DATABASE_URL"],
         cursor_factory=psycopg2.extras.RealDictCursor
     )
-
-# ======================================================
-# FUNÇÕES AUXILIARES
-# ======================================================
 
 def obter_ano_referencia_epoca():
     hoje = date.today()
@@ -56,15 +37,6 @@ def extrair_numero_escalao(cat):
         return int(cat.replace("Sub-", ""))
     return None
 
-def normalizar_escalao(txt):
-    if not txt:
-        return txt
-    return re.sub(r"\s+\(", "(", txt)
-
-# ======================================================
-# LOGIN
-# ======================================================
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     erro = None
@@ -79,10 +51,6 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
-
-# ======================================================
-# OBTER JOGADORES
-# ======================================================
 
 def obter_jogadores(f, sort_col, sort_dir, offset):
     conn = get_db()
@@ -141,10 +109,9 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
     total = cur.fetchone()["total"]
 
     query = f"""
-        SELECT
-            player_id, nome, data_nascimento,
-            clube, escalao, ano_nascimento,
-            distrito, naturalidade
+        SELECT player_id, nome, data_nascimento,
+               clube, escalao, ano_nascimento,
+               distrito, naturalidade
         FROM jogadores
         {base_where}
         {filtros_sql}
@@ -160,14 +127,9 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         categoria = calcular_categoria_por_ano(r["ano_nascimento"])
 
         jogadores.append((
-            r["player_id"],
-            r["nome"],
-            r["data_nascimento"],
-            r["clube"],
-            r["escalao"],
-            categoria,
-            r["distrito"],
-            r["naturalidade"]
+            r["player_id"], r["nome"], r["data_nascimento"],
+            r["clube"], r["escalao"], categoria,
+            r["distrito"], r["naturalidade"]
         ))
 
     cur.close()
@@ -175,14 +137,26 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     return jogadores, total
 
-# ======================================================
-# INDEX
-# ======================================================
-
+# ✅ INDEX CORRIGIDO
 @app.route("/")
 def index():
     if not session.get("autenticado"):
         return redirect("/login")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # ✅ LISTAS PARA OS FILTROS
+    cur.execute("SELECT DISTINCT distrito FROM jogadores ORDER BY distrito")
+    distritos = [r["distrito"] for r in cur.fetchall() if r["distrito"]]
+
+    cur.execute("SELECT DISTINCT naturalidade FROM jogadores ORDER BY naturalidade")
+    naturalidades = [r["naturalidade"] for r in cur.fetchall() if r["naturalidade"]]
+
+    cur.execute("SELECT DISTINCT escalao FROM jogadores ORDER BY escalao")
+    escalaoes_fpf = [r["escalao"] for r in cur.fetchall() if r["escalao"]]
+
+    categorias = [f"Sub-{i}" for i in range(6, 20)] + ["Sénior"]
 
     f = {
         "nome": request.args.get("nome", "").strip(),
@@ -204,18 +178,22 @@ def index():
     if any(v for v in f.values()):
         jogadores, total = obter_jogadores(f, "player_id", "desc", offset)
 
+    cur.close()
+    conn.close()
+
     return render_template(
         "index.html",
         jogadores=jogadores,
         total=total,
-        filtros=f,
-        page=page
+        filtros=request.args,
+        page=page,
+        categorias=categorias,
+        escalaoes_fpf=escalaoes_fpf,
+        distritos=distritos,
+        naturalidades=naturalidades
     )
 
-# ======================================================
-# FICHA DO JOGADOR
-# ======================================================
-
+# ✅ FICHA JOGADOR CORRIGIDA
 @app.route("/jogador/<int:player_id>")
 def ficha_jogador(player_id):
     if not session.get("autenticado"):
@@ -224,37 +202,23 @@ def ficha_jogador(player_id):
     conn = get_db()
     cur = conn.cursor()
 
-    # =========================
-    # DADOS DO JOGADOR (FPF)
-    # =========================
-    cur.execute("""
-        SELECT *
-        FROM jogadores
-        WHERE player_id = %s
-    """, (player_id,))
-
+    cur.execute("SELECT * FROM jogadores WHERE player_id = %s", (player_id,))
     jogador = cur.fetchone()
 
     if not jogador:
         return "Jogador não encontrado", 404
 
-    # =========================
-    # HISTÓRICO ZEROZERO
-    # =========================
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
         JOIN match_zerozero_fpf m
             ON e.player_id = m.id_zerozero_atleta
         WHERE m.player_id_fpf = %s
-        ORDER BY e.epoca DESC, e.competicao
+        ORDER BY e.epoca DESC
     """, (player_id,))
 
     rows = cur.fetchall()
 
-    # =========================
-    # FOTO (SIMPLES E CORRETO)
-    # =========================
     cur.execute("""
         SELECT z.foto_url
         FROM match_zerozero_fpf m
@@ -267,51 +231,29 @@ def ficha_jogador(player_id):
     foto = cur.fetchone()
     foto_url = foto["foto_url"] if foto else None
 
-    print("DEBUG FOTO:", foto_url)
-
-    # =========================
-    # FLAG ÉPOCA ATUAL
-    # =========================
-    tem_epoca_atual = any(
-        r["epoca"] == "2025/26"
-        for r in rows
-    )
-
-    # =========================
-    # ESCALÃO TEÓRICO
-    # =========================
     escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
 
-    # =========================
-    # FORMATAR HISTÓRICO
-    # =========================
     historico_formatado = []
-    epoca_anterior = None
 
     for row in rows:
-        epoca = row["epoca"]
-
-        if epoca != epoca_anterior:
-            epoca_mostrar = epoca
-            epoca_anterior = epoca
-        else:
-            epoca_mostrar = ""
-
-        escalao_encontrado = None
         match = re.search(r"S(\d+)", row["competicao"])
-        if match:
-            escalao_encontrado = int(match.group(1))
+        escalao_encontrado = int(match.group(1)) if match else None
 
         acima = False
         if (
-            epoca == "2025/26"
-            and escalao_encontrado is not None
+            row["epoca"] == "2025/26"
+            and escalao_encontrado
+            and escalao_teorico <= 19
             and escalao_encontrado > escalao_teorico
         ):
             acima = True
 
+        # 🧠 IGNORAR SENIORES
+        if "Seniores" in row["competicao"]:
+            acima = False
+
         historico_formatado.append({
-            "epoca": epoca_mostrar,
+            "epoca": row["epoca"],
             "competicao": row["competicao"],
             "jogos": row["jogos"] or 0,
             "golos": row["golos"] or 0,
@@ -326,14 +268,9 @@ def ficha_jogador(player_id):
         jogador=jogador,
         historico_zz=historico_formatado,
         escalao_teorico=escalao_teorico,
-        tem_epoca_atual=tem_epoca_atual,
         foto_url=foto_url
     )
 
-
-# ======================================================
-# RUN
-# ======================================================
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
