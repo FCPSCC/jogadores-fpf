@@ -73,22 +73,28 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         filtros_sql += " AND ano_nascimento = %s"
         params.append(int(f["ano_nasc"]))
 
-    if f.get("categoria") and f["categoria"].startswith("Sub-"):
-        sub = int(f["categoria"].replace("Sub-", ""))
-        ano_ref = obter_ano_referencia_epoca() - sub + 1
-        filtros_sql += " AND ano_nascimento = %s"
-        params.append(ano_ref)
+    if f.get("categoria"):
+    subs = []
+    for cat in f["categoria"]:
+        if cat.startswith("Sub-"):
+            sub = int(cat.replace("Sub-", ""))
+            ano_ref = obter_ano_referencia_epoca() - sub + 1
+            subs.append(ano_ref)
+
+    if subs:
+        filtros_sql += " AND ano_nascimento = ANY(%s)"
+        params.append(subs)
 
     if f.get("distrito"):
-        filtros_sql += " AND distrito = %s"
+        filtros_sql += " AND distrito = ANY(%s)"
         params.append(f["distrito"])
 
     if f.get("naturalidade"):
-        filtros_sql += " AND naturalidade = %s"
+        filtros_sql += " AND naturalidade = ANY(%s)"
         params.append(f["naturalidade"])
 
     if f.get("escalao"):
-        filtros_sql += " AND escalao = %s"
+        filtros_sql += " AND escalao = ANY(%s)"
         params.append(f["escalao"])
 
     if f.get("acima_escalao") == "1":

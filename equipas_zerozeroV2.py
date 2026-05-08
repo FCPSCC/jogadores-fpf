@@ -41,11 +41,25 @@ def extrair_pagina(page):
 
         nome = nome.strip()
 
-        # ✅ ESCALÃO
-        if any(x in nome for x in ["Jun.", "Sub"]):
-            escalao = nome
-        else:
-            escalao = "A"
+    import re
+
+    nome = nome.strip()
+
+    # procurar início do escalão
+    match = re.search(r"(Jun\..+|Sub\d+|S\d+)", nome)
+
+    if match:
+        escalao = match.group(0)
+
+        # opcional: limpar nome do clube
+        nome_clube = nome[:match.start()]
+        nome_clube = nome_clube.strip()
+
+    if nome_clube == "":
+        nome_clube = nome
+    else:
+        escalao = "A"
+        nome_clube = nome
 
         # ✅ ID ZEROZERO
         partes = href.split("/")
@@ -80,7 +94,7 @@ def guardar_bd(conn, equipas):
             """, (
                 e["id_zerozero"],
                 e["nome"],
-                e["nome"],     # clube simplificado (por agora)
+                nome_clube
                 e["escalao"],
                 e["url"]
             ))
@@ -105,7 +119,6 @@ def main():
     conn = psycopg2.connect(DATABASE_URL)
 
     page = 1
-
     MAX_PAGE = 1181
 
     while page <= MAX_PAGE:
