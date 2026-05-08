@@ -257,35 +257,23 @@ def ficha_jogador(player_id):
     row = cur.fetchone()
     id_zerozero = row["id_zerozero_atleta"] if row else None
 
-    # ✅ 2. ir buscar a foto
-    foto_url = None
+    # ✅ FOTO (VERSÃO CORRETA E SEM ERROS)
 
-    if id_zerozero:
-    cur.execute("""
-        SELECT foto_url
-        FROM zerozero_atleta
-        WHERE id_zerozero_atleta = %s
-    """, (id_zerozero,))
+foto_url = None
 
-    foto = cur.fetchone()
-    foto_url = foto["foto_url"] if foto else None
+cur.execute("""
+    SELECT z.foto_url
+    FROM zerozero_atleta z
+    JOIN match_zerozero_fpf m
+        ON z.id_zerozero_atleta = m.id_zerozero_atleta
+    WHERE m.player_id_fpf = %s
+    LIMIT 1
+""", (player_id,))
 
+foto = cur.fetchone()
+foto_url = foto["foto_url"] if foto else None
 
-    # ✅ FOTO (NOVO - correto)
-    cur.execute("""
-        SELECT z.foto_url
-        FROM zerozero_atleta z
-        JOIN match_zerozero_fpf m
-            ON z.id_zerozero_atleta = m.id_zerozero_atleta
-        WHERE m.player_id_fpf = %s
-    """, (player_id,))
-
-
-    foto = cur.fetchone()
-    foto_url = foto["foto_url"] if foto else None
-
-
-    print("DEBUG FOTO:", foto_url)
+print("DEBUG FOTO:", foto_url)
 
 
     # Flag época atual (corrigido)
