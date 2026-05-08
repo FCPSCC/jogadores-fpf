@@ -198,16 +198,7 @@ a:hover { text-decoration: underline; }
 <div class="section">
     <div class="section-title">Época 2025/26 · Resumo competitivo (ZeroZero)</div>
 
-    {% if resumo_2025.jogos > 0 %}
-        <div style="margin-bottom:12px;">
-            <strong>Jogos:</strong> {{ resumo_2025.jogos }} |
-            <strong>Golos:</strong> {{ resumo_2025.golos }}
-        </div>
-    {% else %}
-        <p>Sem registos de participação na época corrente.</p>
-    {% endif %}
-
-    {% if participacao %}
+        {% if participacao %}
     <table class="table-historico">
         <thead>
             <tr>
