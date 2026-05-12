@@ -74,12 +74,12 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         params.append(int(f["ano_nasc"]))
 
     if f.get("categoria"):
-    subs = []
-    for cat in f["categoria"]:
-        if cat.startswith("Sub-"):
-            sub = int(cat.replace("Sub-", ""))
-            ano_ref = obter_ano_referencia_epoca() - sub + 1
-            subs.append(ano_ref)
+        subs = []
+        for cat in f["categoria"]:
+            if cat.startswith("Sub-"):
+                sub = int(cat.replace("Sub-", ""))
+                ano_ref = obter_ano_referencia_epoca() - sub + 1
+                subs.append(ano_ref)
 
     if subs:
         filtros_sql += " AND ano_nascimento = ANY(%s)"

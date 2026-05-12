@@ -1,186 +1,192 @@
 # -*- coding: utf-8 -*-
 
 import os
+import time
 import psycopg2
 import unicodedata
-from difflib import SequenceMatcher
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
-SCORE_CONFIRMADO = 70
-SCORE_PENDENTE = 50
-
 # ======================================================
-# UTILITÁRIOS
+# NORMALIZAÇÃO
 # ======================================================
 
-def normalizar(txt):
+def normalizar_texto(txt):
     if not txt:
         return ""
+
     txt = txt.lower()
-    txt = unicodedata.normalize("NFD", txt)
-    txt = "".join(c for c in txt if unicodedata.category(c) != "Mn")
-    return " ".join(txt.split())
+    txt = unicodedata.normalize('NFD', txt)
+    txt = txt.encode('ascii', 'ignore').decode("utf-8")
 
-def similaridade(a, b):
-    return SequenceMatcher(None, a, b).ratio()
+    txt = txt.replace("-", " ")
+    txt = " ".join(txt.split())
 
-def clube_compativel(zz_clube, fpf_clube):
-    if not zz_clube or not fpf_clube:
-        return False
-    a = normalizar(zz_clube)
-    b = normalizar(fpf_clube)
-    return a in b or b in a
+    return txt.strip()
+
+
+def normalizar_clube(nome):
+
+    nome = normalizar_texto(nome)
+
+    palavras_remover = [
+        "futebol clube", "futebol clube do", "clube de futebol",
+        "fc", "cf", "sc", "sl", "cd", "gd"
+    ]
+
+    for p in palavras_remover:
+        nome = nome.replace(p, "")
+
+    return " ".join(nome.split())
 
 # ======================================================
-# BD
+# DB
 # ======================================================
 
-def obter_atletas_zerozero(conn):
+def obter_zerozero(conn):
     cur = conn.cursor()
+
     cur.execute("""
         SELECT id_zerozero_atleta, nome_completo
         FROM zerozero_atleta
-        WHERE nome_completo IS NOT NULL
     """)
+
     return cur.fetchall()
 
-def obter_contexto_zerozero(conn, zz_id):
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT DISTINCT clube, escalao
-        FROM zerozero_plantel
-        WHERE id_zerozero_atleta = %s
-    """, (zz_id,))
-    return cur.fetchall()
 
-def obter_jogadores_fpf(conn):
+def obter_fpf(conn):
     cur = conn.cursor()
+
     cur.execute("""
-        SELECT
-            player_id,
-            nome,
-            ano_nascimento,
-            clube,
-            escalao
+        SELECT player_id, nome, data_nascimento, clube
         FROM jogadores
     """)
+
     return cur.fetchall()
 
-def inserir_match(conn, zz_id, fpf_id, score, metodo, estado):
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO match_zerozero_fpf (
-            id_zerozero_atleta,
-            player_id_fpf,
-            score_confianca,
-            metodo,
-            estado
-        )
-        VALUES (%s,%s,%s,%s,%s)
-        ON CONFLICT (id_zerozero_atleta) DO NOTHING
-    """, (zz_id, fpf_id, score, metodo, estado))
+
+def reconnect_db():
+    while True:
+        try:
+            print("🔄 Reconectar BD...")
+            conn = psycopg2.connect(DATABASE_URL)
+            conn.autocommit = False
+            print("✅ BD reconectada")
+            return conn
+        except Exception as e:
+            print("⚠️ erro BD:", e)
+            time.sleep(5)
 
 # ======================================================
-# MATCHING
+# MATCH
 # ======================================================
 
-def calcular_score(
-    nome_zz, nome_fpf,
-    clube_zz, clube_fpf,
-    escalao_zz, escalao_fpf
-):
+def calcular_score(nome_zz, nome_fpf, clube_fpf):
+
     score = 0
-    metodo = []
 
-    n1 = normalizar(nome_zz)
-    n2 = normalizar(nome_fpf)
+    nome_zz_n = normalizar_texto(nome_zz)
+    nome_fpf_n = normalizar_texto(nome_fpf)
 
-    sim = similaridade(n1, n2)
+    clube_fpf_n = normalizar_clube(clube_fpf)
 
-    if sim >= 0.80:
+    # ✅ nome
+    if nome_zz_n == nome_fpf_n:
         score += 50
-        metodo.append("nome≈")
-    elif sim >= 0.70:
-        score += 35
-        metodo.append("nome~")
-    else:
-        return 0, None
+    elif nome_zz_n in nome_fpf_n or nome_fpf_n in nome_zz_n:
+        score += 40
 
-    if clube_compativel(clube_zz, clube_fpf):
+    # ✅ clube (só FPF → simples)
+    if clube_fpf_n:
         score += 20
-        metodo.append("clube")
 
-    if escalao_zz and escalao_fpf and escalao_zz == escalao_fpf:
-        score += 15
-        metodo.append("escalao")
+    return score
 
-    return score, ",".join(metodo)
+
+def inserir_match(conn, zz_id, fpf_id, score):
+
+    while True:
+        try:
+            cur = conn.cursor()
+
+            cur.execute("""
+                INSERT INTO match_zerozero_fpf (
+                    id_zerozero_atleta,
+                    player_id_fpf,
+                    score_confianca,
+                    metodo,
+                    estado
+                )
+                VALUES (%s,%s,%s,'auto','confirmado')
+                ON CONFLICT (id_zerozero_atleta) DO NOTHING
+            """, (zz_id, fpf_id, score))
+
+            conn.commit()
+            break
+
+        except Exception as e:
+            print("⚠️ erro BD:", e)
+            time.sleep(3)
+            conn = reconnect_db()
 
 # ======================================================
 # MAIN
 # ======================================================
 
 def main():
+
     conn = psycopg2.connect(DATABASE_URL)
     conn.autocommit = False
 
-    atletas_zz = obter_atletas_zerozero(conn)
-    jogadores_fpf = obter_jogadores_fpf(conn)
+    zz = obter_zerozero(conn)
+    fpf = obter_fpf(conn)
 
-    print(f"✅ Atletas ZeroZero a processar: {len(atletas_zz)}")
+    print(f"✅ ZeroZero: {len(zz)}")
+    print(f"✅ FPF: {len(fpf)}")
 
-    confirmados = 0
-    pendentes = 0
+    total = len(zz)
 
-    for zz_id, nome_zz in atletas_zz:
-        contextos = obter_contexto_zerozero(conn, zz_id)
-        melhor = None  # (score, player_id, metodo, estado)
+    start_time = time.time()
 
-        for clube_zz, escalao_zz in contextos:
-            for (
-                player_id, nome_fpf, _, clube_fpf, escalao_fpf
-            ) in jogadores_fpf:
+    for i, z in enumerate(zz):
 
-                score, metodo = calcular_score(
-                    nome_zz, nome_fpf,
-                    clube_zz, clube_fpf,
-                    escalao_zz, escalao_fpf
-                )
+        zz_id = z[0]
+        nome_zz = z[1]
 
-                if score < SCORE_PENDENTE:
-                    continue
+        melhor_score = 0
+        melhor_fpf = None
 
-                estado = (
-                    "confirmado" if score >= SCORE_CONFIRMADO
-                    else "pendente"
-                )
+        for f in fpf:
 
-                if melhor is None or score > melhor[0]:
-                    melhor = (score, player_id, metodo, estado)
+            fpf_id = f[0]
+            nome_fpf = f[1]
+            clube_fpf = f[3]
 
-        if melhor:
-            inserir_match(
-                conn,
-                zz_id,
-                melhor[1],
-                melhor[0],
-                melhor[2],
-                melhor[3]
-            )
+            score = calcular_score(nome_zz, nome_fpf, clube_fpf)
 
-            if melhor[3] == "confirmado":
-                confirmados += 1
+            if score > melhor_score:
+                melhor_score = score
+                melhor_fpf = fpf_id
+
+        if melhor_score >= 70:
+            inserir_match(conn, zz_id, melhor_fpf, melhor_score)
+
+        # ✅ PROGRESSO
+        if i % 100 == 0:
+            elapsed = time.time() - start_time
+            percent = (i / total) * 100
+
+            if i > 0:
+                eta = elapsed / i * (total - i)
             else:
-                pendentes += 1
+                eta = 0
 
-            conn.commit()
+            print(f"{i}/{total} | {percent:.2f}% | ⏱ {elapsed/60:.1f} min | ETA {eta/60:.1f} min")
 
     conn.close()
 
-    print("\n✅ Matching concluído")
-    print(f"Confirmados: {confirmados}")
-    print(f"Pendentes: {pendentes}")
+    print("\n✅ MATCHING CONCLUÍDO")
+
 
 if __name__ == "__main__":
     main()

@@ -3,13 +3,14 @@ from bs4 import BeautifulSoup
 import time
 import psycopg2
 import os
+import re
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 headers = {"User-Agent": "Mozilla/5.0"}
 base = "https://www.zerozero.pt"
 
-URL = "https://www.zerozero.pt/equipas/futebol/portugal?order=popular&type_id=0&page="
+URL = "https://www.zerozero.pt/equipas/futebol-de-8/portugal?order=popular&page="
 
 
 def extrair_pagina(page):
@@ -25,10 +26,30 @@ def extrair_pagina(page):
 
     equipas = []
 
+    # ✅ método principal
     items = soup.select("div.zz-search-item.team")
 
+    # 🔥 fallback para páginas avançadas (tipo >600)
+    if not items:
+        print("⚠️ fallback ativado")
+
+        links = soup.find_all("a", href=True)
+
+        novos = []
+        for l in links:
+            href = l.get("href", "")
+            if "/equipa/" in href:
+                novos.append(l)
+
+        items = novos
+
     for item in items:
-        a = item.select_one("a.title")
+
+        # ✅ adaptação HTML normal vs fallback
+        if hasattr(item, "select_one"):
+            a = item.select_one("a.title")
+        else:
+            a = item
 
         if not a:
             continue
@@ -41,27 +62,16 @@ def extrair_pagina(page):
 
         nome = nome.strip()
 
-    import re
+        # ✅ separar clube + escalão corretamente
+        match = re.search(r"(Jun\.[A-Z]\s*S\d+|Sub\d+|S\d+)", nome)
 
-    nome = nome.strip()
+        if match:
+            escalao = match.group(0)
+            nome_clube = nome[:match.start()].strip()
+        else:
+            escalao = "A"
+            nome_clube = nome
 
-    # procurar início do escalão
-    match = re.search(r"(Jun\..+|Sub\d+|S\d+)", nome)
-
-    if match:
-        escalao = match.group(0)
-
-        # opcional: limpar nome do clube
-        nome_clube = nome[:match.start()]
-        nome_clube = nome_clube.strip()
-
-    if nome_clube == "":
-        nome_clube = nome
-    else:
-        escalao = "A"
-        nome_clube = nome
-
-        # ✅ ID ZEROZERO
         partes = href.split("/")
         id_zz = partes[-1]
 
@@ -74,6 +84,7 @@ def extrair_pagina(page):
         equipas.append({
             "id_zerozero": id_zz,
             "nome": nome,
+            "clube": nome_clube,
             "escalao": escalao,
             "url": base + href
         })
@@ -94,7 +105,7 @@ def guardar_bd(conn, equipas):
             """, (
                 e["id_zerozero"],
                 e["nome"],
-                nome_clube
+                e["clube"],
                 e["escalao"],
                 e["url"]
             ))
@@ -108,9 +119,10 @@ def guardar_bd(conn, equipas):
             print("❌ erro BD:", ex)
             conn.rollback()
 
-    # ✅ DEBUG FINAL CORRETO (aqui faz sentido)
+    # ✅ debug total linhas
     cur.execute("SELECT COUNT(*) FROM zerozero_equipa")
-    print("TOTAL LINHAS BD:", cur.fetchone())
+    total = cur.fetchone()[0]
+    print("TOTAL LINHAS BD:", total)
 
     conn.commit()
 
@@ -119,7 +131,7 @@ def main():
     conn = psycopg2.connect(DATABASE_URL)
 
     page = 1
-    MAX_PAGE = 1181
+    MAX_PAGE = 6
 
     while page <= MAX_PAGE:
         equipas = extrair_pagina(page)
