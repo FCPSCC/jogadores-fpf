@@ -213,20 +213,28 @@ A competir acima do escalão
 
 <div style="margin-top:20px; text-align:center;">
 
+{% set args = request.args.to_dict(flat=False) %}
+{% do args.pop('page', None) %}
+
 {% if page > 0 %}
-<a href="?{{ request.query_string.decode().replace('page=' ~ page, 'page=' ~ (page-1)) }}">⬅️ Anterior</a>
+ }}">
+⬅️ Anterior
+</a>
 {% endif %}
 
 &nbsp;&nbsp;
+
 Página {{ page + 1 }} de {{ total_paginas }}
+
 &nbsp;&nbsp;
 
 {% if page + 1 < total_paginas %}
-<a href="?{{ request.query_string.decode().replace('page=' ~ page, 'page=' ~ (page+1)) }}">Seguinte ➡️</a>
+ }}">
+Seguinte ➡️
+</a>
 {% endif %}
 
 </div>
-
 
 
 </main>

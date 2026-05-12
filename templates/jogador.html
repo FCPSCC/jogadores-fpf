@@ -38,7 +38,6 @@ a:hover { text-decoration: underline; }
     font-weight: 600;
 }
 
-/* CABEÇALHO */
 .player-header {
     background: var(--card);
     padding: 20px;
@@ -49,7 +48,6 @@ a:hover { text-decoration: underline; }
     gap: 20px;
 }
 
-/* Destaque FC Porto */
 .player-header.porto {
     background: linear-gradient(135deg, var(--porto-blue), #001b4d);
     color: #fff;
@@ -60,7 +58,6 @@ a:hover { text-decoration: underline; }
     color: #fff;
 }
 
-/* FOTO */
 .photo {
     width: 120px;
     height: 120px;
@@ -74,12 +71,12 @@ a:hover { text-decoration: underline; }
     object-fit: cover;
 }
 
-/* INFO */
 .player-name {
     font-size: 28px;
     font-weight: 800;
     margin-bottom: 8px;
 }
+
 .player-meta {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -87,30 +84,21 @@ a:hover { text-decoration: underline; }
     column-gap: 20px;
     font-size: 14px;
 }
+
 .label {
     color: var(--secondary);
     font-weight: 600;
 }
+
 .value {
     font-weight: 500;
 }
 
-/* BADGE JOGA ACIMA */
-.badge-up {
-    display: inline-block;
-    margin: 6px 0 10px 0;
-    background: #f39c12;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 6px 10px;
-    border-radius: 6px;
-}
-
-/* SEÇÕES */
+/* SECTION */
 .section {
     margin-top: 30px;
 }
+
 .section-title {
     font-size: 18px;
     font-weight: 700;
@@ -121,23 +109,16 @@ a:hover { text-decoration: underline; }
 .table-historico {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
 }
 .table-historico th,
 .table-historico td {
     border: 1px solid var(--border);
     padding: 8px;
-    text-align: left;
 }
 .table-historico th {
     background: #f2f2f2;
 }
-.badge-escalao {
-    font-weight: bold;
-    color: #003087;
-}
 
-/* FOOTER */
 .footer {
     margin-top: 25px;
     font-size: 12px;
@@ -145,17 +126,6 @@ a:hover { text-decoration: underline; }
     display: flex;
     justify-content: space-between;
 }
-</style>
-</head>
-
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-<meta charset="UTF-8">
-<title>{{ jogador["nome"] }}</title>
-
-<style>
-/* (ESTILO FICA IGUAL — não mexi) */
 </style>
 </head>
 
@@ -179,12 +149,6 @@ a:hover { text-decoration: underline; }
     <div>
         <div class="player-name">{{ jogador["nome"] }}</div>
 
-        {% if joga_acima %}
-        <div class="badge-up">
-            🟧 A competir acima do escalão (Sub‑{{ escalao_teorico }} → Sub‑{{ escalao_real_max }})
-        </div>
-        {% endif %}
-
         <div class="player-meta">
             <div><span class="label">Clube:</span> <span class="value">{{ jogador["clube"] or "—" }}</span></div>
             <div><span class="label">Data nasc.:</span> <span class="value">{{ jogador["data_nascimento"] or "—" }}</span></div>
@@ -194,59 +158,31 @@ a:hover { text-decoration: underline; }
     </div>
 </div>
 
-<!-- HISTÓRICO COMPETITIVO -->
+<!-- ✅ RESUMO 2025/26 -->
 <div class="section">
     <div class="section-title">Época 2025/26 · Resumo competitivo (ZeroZero)</div>
 
-        {% if participacao %}
-    <table class="table-historico">
-        <thead>
-            <tr>
-                <th>Modalidade</th>
-                <th>Clube</th>
-                <th>Escalão real</th>
-                <th>Jogos</th>
-                <th>Golos</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in participacao %}
-            <tr>
-                <td>{{ p["modalidade"] }}</td>
-                <td>{{ p["clube"] }}</td>
-                <td>
-                    <span class="badge-escalao">Sub‑{{ p["escalao"] }}</span>
-                    <span style="font-size:12px; color:#666;">({{ p["escalao_texto"] }})</span>
-                </td>
-                <td>{{ p["jogos"] }}</td>
-                <td>{{ p["golos"] }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-
+    <p style="font-size:16px;">
+        Jogos: <strong>{{ resumo_2025.jogos }}</strong>
+        &nbsp;&nbsp;
+        Golos: <strong>{{ resumo_2025.golos }}</strong>
+    </p>
 </div>
 
-<!-- HISTÓRICO ZEROZERO -->
+<!-- ✅ HISTÓRICO ZEROZERO CORRIGIDO -->
+<div class="section">
 <h3>Histórico ZeroZero</h3>
 
-<table style="width:100%; border-collapse: collapse;">
-<tr style="background-color:#eee;">
-    <th style="text-align:left; padding:6px;">Época</th>
-    <th style="text-align:left; padding:6px;">Competição</th>
-    <th style="text-align:right; padding:6px;">J</th>
-    <th style="text-align:right; padding:6px;">G</th>
+<table class="table-historico">
+
+<tr>
+    <th>Época</th>
+    <th>Competição</th>
+    <th style="text-align:right;">J</th>
+    <th style="text-align:right;">G</th>
 </tr>
 
 {% for linha in historico_zz %}
-
-{% if linha.epoca %}
-<tr>
-    <td colspan="4" style="background:#f5f5f5; height:6px;"></td>
-</tr>
-{% endif %}
-
 <tr style="border-bottom: 1px solid #ddd;">
     <td style="padding:6px; font-weight:bold;">
         {{ linha.epoca }}
@@ -254,11 +190,6 @@ a:hover { text-decoration: underline; }
 
     <td>
         {{ linha.competicao }}
-        {% if linha.acima %}
-            <span style="background:#ffe6e6; color:#b30000; padding:2px 6px; border-radius:4px;">
-                ↑ Acima
-            </span>
-        {% endif %}
     </td>
 
     <td style="padding:6px; text-align:right;">
@@ -269,9 +200,10 @@ a:hover { text-decoration: underline; }
         {{ linha.golos }}
     </td>
 </tr>
-
 {% endfor %}
+
 </table>
+</div>
 
 <div class="footer">
     <div>ID interno: {{ jogador["player_id"] }}</div>

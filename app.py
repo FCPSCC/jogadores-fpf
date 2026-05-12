@@ -32,10 +32,9 @@ def calcular_categoria_por_ano(ano_nascimento):
         return f"Sub-{sub}"
     return "Sénior"
 
-def extrair_numero_escalao(cat):
-    if cat and cat.startswith("Sub-"):
-        return int(cat.replace("Sub-", ""))
-    return None
+# =========================
+# LOGIN
+# =========================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -51,6 +50,10 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
+
+# =========================
+# LISTA JOGADORES
+# =========================
 
 def obter_jogadores(f, sort_col, sort_dir, offset):
     conn = get_db()
@@ -73,7 +76,7 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
         filtros_sql += " AND ano_nascimento = %s"
         params.append(int(f["ano_nasc"]))
 
-    subs = []  # ✅ criar sempre antes
+    subs = []
 
     if f.get("categoria"):
         for cat in f["categoria"]:
@@ -81,10 +84,6 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
                 sub = int(cat.replace("Sub-", ""))
                 ano_ref = obter_ano_referencia_epoca() - sub + 1
                 subs.append(ano_ref)
-
-    if subs:
-        filtros_sql += " AND ano_nascimento = ANY(%s)"
-        params.append(subs)
 
     if subs:
         filtros_sql += " AND ano_nascimento = ANY(%s)"
@@ -104,11 +103,13 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     if f.get("acima_escalao") == "1":
         filtros_sql += """
+            AND escalao != 'Sénior'
+            AND ano_nascimento IS NOT NULL
             AND player_id IN (
                 SELECT m.player_id_fpf
                 FROM estatisticas_zerozero e
                 JOIN match_zerozero_fpf m
-                    ON e.player_id = m.id_zerozero_atleta
+                     ON e.player_id = m.id_zerozero_atleta
                 WHERE e.epoca = '2025/26'
             )
         """
@@ -148,7 +149,10 @@ def obter_jogadores(f, sort_col, sort_dir, offset):
 
     return jogadores, total
 
-# ✅ INDEX CORRIGIDO
+# =========================
+# INDEX
+# =========================
+
 @app.route("/")
 def index():
     if not session.get("autenticado"):
@@ -157,7 +161,6 @@ def index():
     conn = get_db()
     cur = conn.cursor()
 
-    # ✅ LISTAS PARA OS FILTROS
     cur.execute("SELECT DISTINCT distrito FROM jogadores ORDER BY distrito")
     distritos = [r["distrito"] for r in cur.fetchall() if r["distrito"]]
 
@@ -189,9 +192,7 @@ def index():
     if any(v for v in f.values()):
         jogadores, total = obter_jogadores(f, "player_id", "desc", offset)
 
-
     total_paginas = (total // 100) + (1 if total % 100 else 0)
-
 
     cur.close()
     conn.close()
@@ -209,9 +210,13 @@ def index():
         total_paginas=total_paginas
     )
 
-# ✅ FICHA JOGADOR CORRIGIDA
+# =========================
+# DETALHE JOGADOR
+# =========================
+
 @app.route("/jogador/<int:player_id>")
 def ficha_jogador(player_id):
+
     if not session.get("autenticado"):
         return redirect("/login")
 
@@ -247,39 +252,43 @@ def ficha_jogador(player_id):
     foto = cur.fetchone()
     foto_url = foto["foto_url"] if foto else None
 
+    escalao_teorico = None
     if jogador["ano_nascimento"]:
         escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
-    else:
-        escalao_teorico = None
 
+    historico_dict = {}
+    resumo_2025 = {"jogos": 0, "golos": 0}
+
+    for row in rows:
+        epoca = row["epoca"]
+
+        if epoca not in historico_dict:
+            historico_dict[epoca] = {
+                "competicoes": [],
+                "jogos": 0,
+                "golos": 0
+            }
+
+        historico_dict[epoca]["competicoes"].append(row["competicao"])
+        historico_dict[epoca]["jogos"] += row["jogos"] or 0
+        historico_dict[epoca]["golos"] += row["golos"] or 0
+
+        if epoca == "2025/26":
+            resumo_2025["jogos"] += row["jogos"] or 0
+            resumo_2025["golos"] += row["golos"] or 0
 
     historico_formatado = []
 
-    for row in rows:
-        match = re.search(r"S(\d+)", row["competicao"])
-        escalao_encontrado = int(match.group(1)) if match else None
+    for epoca, dados in historico_dict.items():
 
-        acima = False
-        if (
-            row["epoca"] == "2025/26"
-            and escalao_encontrado
-            and escalao_teorico is not None
-            and escalao_teorico <= 19
-            and escalao_encontrado > escalao_teorico
-        ):
-            acima = True
+        for i, comp in enumerate(dados["competicoes"]):
 
-        # 🧠 IGNORAR SENIORES
-        if "Seniores" in row["competicao"]:
-            acima = False
-
-        historico_formatado.append({
-            "epoca": row["epoca"],
-            "competicao": row["competicao"],
-            "jogos": row["jogos"] or 0,
-            "golos": row["golos"] or 0,
-            "acima": acima
-        })
+            historico_formatado.append({
+                "epoca": epoca if i == 0 else "",
+                "competicao": comp,
+                "jogos": dados["jogos"] if i == 0 else "",
+                "golos": dados["golos"] if i == 0 else ""
+            })
 
     cur.close()
     conn.close()
@@ -288,10 +297,9 @@ def ficha_jogador(player_id):
         "jogador.html",
         jogador=jogador,
         historico_zz=historico_formatado,
-        escalao_teorico=escalao_teorico,
+        resumo_2025=resumo_2025,
         foto_url=foto_url
     )
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
