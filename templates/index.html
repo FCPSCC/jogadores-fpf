@@ -63,7 +63,7 @@ function limpar(){
 {% for c in categorias %}
 <label>
 <input type="checkbox" name="categoria[]" value="{{ c }}"
-{% if c in filtros.categoria %}checked{% endif %}>
+{% if filtros.getlist('categoria[]') and c in filtros.getlist('categoria[]') %}checked{% endif %}>
 {{ c }}
 </label><br>
 {% endfor %}
@@ -82,7 +82,7 @@ function limpar(){
 {% for e in escalaoes_fpf %}
 <label>
 <input type="checkbox" name="escalao_fpf[]" value="{{ e }}"
-{% if e in filtros.escalao_fpf %}checked{% endif %}>
+{% if filtros.getlist('escalao_fpf[]') and e in filtros.getlist('escalao_fpf[]') %}checked{% endif %}>
 {{ e }}
 </label><br>
 {% endfor %}
@@ -101,7 +101,7 @@ function limpar(){
 {% for d in distritos %}
 <label>
 <input type="checkbox" name="distrito[]" value="{{ d }}"
-{% if d in filtros.distrito %}checked{% endif %}>
+{% if filtros.getlist('distrito[]') and d in filtros.getlist('distrito[]') %}checked{% endif %}>
 {{ d }}
 </label><br>
 {% endfor %}
@@ -120,7 +120,7 @@ function limpar(){
 {% for n in naturalidades %}
 <label>
 <input type="checkbox" name="naturalidade[]" value="{{ n }}"
-{% if n in filtros.naturalidade %}checked{% endif %}>
+{% if filtros.getlist('naturalidade[]') and n in filtros.getlist('naturalidade[]') %}checked{% endif %}>
 {{ n }}
 </label><br>
 {% endfor %}
@@ -132,7 +132,7 @@ function limpar(){
 <div class="filtro" style="margin-top:18px;">
 <label>
 <input type="checkbox" name="acima_escalao" value="1"
-{% if filtros.acima_escalao == "1" %}checked{% endif %}>
+{% if filtros.get('acima_escalao') == "1" %}checked{% endif %}>
 A competir acima do escalão
 </label>
 </div>
@@ -150,7 +150,9 @@ A competir acima do escalão
 <div class="toolbar">
 <div><b>Total de resultados:</b> {{ total }}</div>
 <div>
-<a href="/exportar?{{ request.query_string.decode() }}">📥 Exportar para Excel</a>
+<a href="/exportar?{{ request.query_string.decode() }}">
+📥 Exportar para Excel
+</a>
 </div>
 </div>
 
@@ -193,11 +195,16 @@ A competir acima do escalão
 </tbody>
 </table>
 
-<!-- ✅ PAGINAÇÃO CORRIGIDA -->
+<!-- ✅ PAGINAÇÃO FINAL CORRETA -->
 <div style="margin-top:20px; text-align:center;">
 
+{% set args = request.args.to_dict(flat=False) %}
+{% if 'page' in args %}
+{% set _ = args.pop('page') %}
+{% endif %}
+
 {% if page > 0 %}
-<a href="?page={{ page - 1 }}">⬅️ Anterior</a>
+indice', **args, page=page-1) }}">⬅️ Anterior</a>
 {% endif %}
 
 &nbsp;&nbsp;
@@ -207,7 +214,7 @@ Página {{ page + 1 }} de {{ total_paginas }}
 &nbsp;&nbsp;
 
 {% if page + 1 < total_paginas %}
-<a href="?page={{ page + 1 }}">Seguinte ➡️</a>
+indice', **args, page=page+1) }}">Seguinte ➡️</a>
 {% endif %}
 
 </div>
