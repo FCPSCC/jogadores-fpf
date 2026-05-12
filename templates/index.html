@@ -52,7 +52,7 @@ function limpar(){
     <input name="ano_nasc" size="5" value="{{ filtros.ano_nasc }}">
 </div>
 
-<!-- ================== CATEGORIA ================== -->
+<!-- CATEGORIA -->
 <div class="filtro">
 <details>
 <summary>Categoria</summary>
@@ -71,7 +71,7 @@ function limpar(){
 </details>
 </div>
 
-<!-- ============ ESCALÃO FPF ============ -->
+<!-- ESCALÃO -->
 <div class="filtro">
 <details>
 <summary>Escalão (FPF)</summary>
@@ -90,7 +90,7 @@ function limpar(){
 </details>
 </div>
 
-<!-- ================== DISTRITO ================== -->
+<!-- DISTRITO -->
 <div class="filtro">
 <details>
 <summary>Distrito</summary>
@@ -109,7 +109,7 @@ function limpar(){
 </details>
 </div>
 
-<!-- ================= NATURALIDADE ================= -->
+<!-- NATURALIDADE -->
 <div class="filtro">
 <details>
 <summary>Naturalidade</summary>
@@ -128,7 +128,7 @@ function limpar(){
 </details>
 </div>
 
-<!-- ✅ NOVO FILTRO: JOGA ACIMA DO ESCALÃO -->
+<!-- JOGA ACIMA -->
 <div class="filtro" style="margin-top:18px;">
 <label>
 <input type="checkbox" name="acima_escalao" value="1"
@@ -168,25 +168,7 @@ A competir acima do escalão
     ("naturalidade", "Naturalidade")
 ] %}
 {% for col, label in cols %}
-<th>
-  {{ label }}
-
-  <a href="?{{ request.query_string.decode()
-      | replace('sort=' ~ col, '')
-      | replace('dir=asc', '')
-      | replace('dir=desc', '')
-  }}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=asc">
-    ▲
-  </a>
-
-  <a href="?{{ request.query_string.decode()
-      | replace('sort=' ~ col, '')
-      | replace('dir=asc', '')
-      | replace('dir=desc', '')
-  }}{% if request.query_string %}&amp;{% endif %}sort={{ col }}&amp;dir=desc">
-    ▼
-  </a>
-</th>
+<th>{{ label }}</th>
 {% endfor %}
 <th>FPF</th>
 </tr>
@@ -211,10 +193,11 @@ A competir acima do escalão
 </tbody>
 </table>
 
+<!-- ✅ PAGINAÇÃO CORRIGIDA -->
 <div style="margin-top:20px; text-align:center;">
 
 {% if page > 0 %}
- }}">⬅️ Anterior</a>
+<a href="?page={{ page - 1 }}">⬅️ Anterior</a>
 {% endif %}
 
 &nbsp;&nbsp;
@@ -224,7 +207,7 @@ Página {{ page + 1 }} de {{ total_paginas }}
 &nbsp;&nbsp;
 
 {% if page + 1 < total_paginas %}
- }}">Seguinte ➡️</a>
+<a href="?page={{ page + 1 }}">Seguinte ➡️</a>
 {% endif %}
 
 </div>

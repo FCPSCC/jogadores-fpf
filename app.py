@@ -229,6 +229,19 @@ def ficha_jogador(player_id):
     if not jogador:
         return "Jogador não encontrado", 404
 
+    # ✅ ADD URL ZEROZERO
+    cur.execute("""
+        SELECT z.foto_url, z.url_zerozero
+        FROM match_zerozero_fpf m
+        JOIN zerozero_atleta z
+            ON m.id_zerozero_atleta = z.id_zerozero_atleta
+        WHERE m.player_id_fpf = %s
+        LIMIT 1
+    """, (player_id,))
+    foto = cur.fetchone()
+    foto_url = foto["foto_url"] if foto else None
+    url_zerozero = foto["url_zerozero"] if foto else None
+
     cur.execute("""
         SELECT e.epoca, e.competicao, e.jogos, e.golos
         FROM estatisticas_zerozero e
@@ -240,55 +253,27 @@ def ficha_jogador(player_id):
 
     rows = cur.fetchall()
 
-    cur.execute("""
-        SELECT z.foto_url
-        FROM match_zerozero_fpf m
-        JOIN zerozero_atleta z
-            ON m.id_zerozero_atleta = z.id_zerozero_atleta
-        WHERE m.player_id_fpf = %s
-        LIMIT 1
-    """, (player_id,))
-
-    foto = cur.fetchone()
-    foto_url = foto["foto_url"] if foto else None
-
-    escalao_teorico = None
-    if jogador["ano_nascimento"]:
-        escalao_teorico = obter_ano_referencia_epoca() - jogador["ano_nascimento"] + 1
-
-    historico_dict = {}
     resumo_2025 = {"jogos": 0, "golos": 0}
 
-    for row in rows:
-        epoca = row["epoca"]
-
-        if epoca not in historico_dict:
-            historico_dict[epoca] = {
-                "competicoes": [],
-                "jogos": 0,
-                "golos": 0
-            }
-
-        historico_dict[epoca]["competicoes"].append(row["competicao"])
-        historico_dict[epoca]["jogos"] += row["jogos"] or 0
-        historico_dict[epoca]["golos"] += row["golos"] or 0
-
-        if epoca == "2025/26":
-            resumo_2025["jogos"] += row["jogos"] or 0
-            resumo_2025["golos"] += row["golos"] or 0
+    for r in rows:
+        if r["epoca"] == "2025/26":
+            resumo_2025["jogos"] += r["jogos"] or 0
+            resumo_2025["golos"] += r["golos"] or 0
 
     historico_formatado = []
+    ultima_epoca = None
 
-    for epoca, dados in historico_dict.items():
+    for r in rows:
+        epoca = r["epoca"]
 
-        for i, comp in enumerate(dados["competicoes"]):
+        historico_formatado.append({
+            "epoca": epoca if epoca != ultima_epoca else "",
+            "competicao": r["competicao"],
+            "jogos": r["jogos"],
+            "golos": r["golos"]
+        })
 
-            historico_formatado.append({
-                "epoca": epoca if i == 0 else "",
-                "competicao": comp,
-                "jogos": dados["jogos"] if i == 0 else "",
-                "golos": dados["golos"] if i == 0 else ""
-            })
+        ultima_epoca = epoca
 
     cur.close()
     conn.close()
@@ -298,7 +283,8 @@ def ficha_jogador(player_id):
         jogador=jogador,
         historico_zz=historico_formatado,
         resumo_2025=resumo_2025,
-        foto_url=foto_url
+        foto_url=foto_url,
+        url_zerozero=url_zerozero
     )
 
 if __name__ == "__main__":

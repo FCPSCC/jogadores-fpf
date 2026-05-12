@@ -149,6 +149,20 @@ a:hover { text-decoration: underline; }
     <div>
         <div class="player-name">{{ jogador["nome"] }}</div>
 
+        <!-- ✅ LINKS ADICIONADOS -->
+        <p>
+            <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador['player_id'] }}" target="_blank">
+                FPF
+            </a>
+
+            {% if url_zerozero %}
+            |
+            <a href="{{ url_zerozero }}" target="_blank">
+                ZeroZero
+            </a>
+            {% endif %}
+        </p>
+
         <div class="player-meta">
             <div><span class="label">Clube:</span> <span class="value">{{ jogador["clube"] or "—" }}</span></div>
             <div><span class="label">Data nasc.:</span> <span class="value">{{ jogador["data_nascimento"] or "—" }}</span></div>
@@ -169,7 +183,7 @@ a:hover { text-decoration: underline; }
     </p>
 </div>
 
-<!-- ✅ HISTÓRICO ZEROZERO CORRIGIDO -->
+<!-- ✅ HISTÓRICO ZEROZERO -->
 <div class="section">
 <h3>Histórico ZeroZero</h3>
 
