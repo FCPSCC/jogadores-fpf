@@ -204,7 +204,7 @@ A competir acima do escalão
 {% endif %}
 
 {% if page > 0 %}
-indice', **args, page=page-1) }}">⬅️ Anterior</a>
+<a href="{{ url_for('index', page=page-1, **args) }}">⬅️ Anterior</a>
 {% endif %}
 
 &nbsp;&nbsp;
@@ -214,7 +214,7 @@ Página {{ page + 1 }} de {{ total_paginas }}
 &nbsp;&nbsp;
 
 {% if page + 1 < total_paginas %}
-indice', **args, page=page+1) }}">Seguinte ➡️</a>
+<a href="{{ url_for('index', page=page+1, **args) }}">Seguinte ➡️</a>
 {% endif %}
 
 </div>

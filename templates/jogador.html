@@ -38,6 +38,7 @@ a:hover { text-decoration: underline; }
     font-weight: 600;
 }
 
+/* CABEÇALHO */
 .player-header {
     background: var(--card);
     padding: 20px;
@@ -58,6 +59,7 @@ a:hover { text-decoration: underline; }
     color: #fff;
 }
 
+/* FOTO */
 .photo {
     width: 120px;
     height: 120px;
@@ -71,6 +73,7 @@ a:hover { text-decoration: underline; }
     object-fit: cover;
 }
 
+/* INFO */
 .player-name {
     font-size: 28px;
     font-weight: 800;
@@ -94,7 +97,7 @@ a:hover { text-decoration: underline; }
     font-weight: 500;
 }
 
-/* SECTION */
+/* SEÇÕES */
 .section {
     margin-top: 30px;
 }
@@ -119,6 +122,7 @@ a:hover { text-decoration: underline; }
     background: #f2f2f2;
 }
 
+/* FOOTER */
 .footer {
     margin-top: 25px;
     font-size: 12px;
@@ -149,8 +153,8 @@ a:hover { text-decoration: underline; }
     <div>
         <div class="player-name">{{ jogador["nome"] }}</div>
 
-        <!-- ✅ LINKS ADICIONADOS -->
-        <p>
+        <!-- ✅ LINKS CORRIGIDOS -->
+        <div style="margin-bottom:10px;">
             <a href="https://www.fpf.pt/pt/Jogadores/Ficha-de-Jogador/playerId/{{ jogador['player_id'] }}" target="_blank">
                 FPF
             </a>
@@ -161,7 +165,7 @@ a:hover { text-decoration: underline; }
                 ZeroZero
             </a>
             {% endif %}
-        </p>
+        </div>
 
         <div class="player-meta">
             <div><span class="label">Clube:</span> <span class="value">{{ jogador["clube"] or "—" }}</span></div>
@@ -172,7 +176,7 @@ a:hover { text-decoration: underline; }
     </div>
 </div>
 
-<!-- ✅ RESUMO 2025/26 -->
+<!-- RESUMO -->
 <div class="section">
     <div class="section-title">Época 2025/26 · Resumo competitivo (ZeroZero)</div>
 
@@ -183,7 +187,7 @@ a:hover { text-decoration: underline; }
     </p>
 </div>
 
-<!-- ✅ HISTÓRICO ZEROZERO -->
+<!-- HISTÓRICO -->
 <div class="section">
 <h3>Histórico ZeroZero</h3>
 
