@@ -243,12 +243,11 @@ def ficha_jogador(player_id):
     url_zerozero = foto["url_zerozero"] if foto else None
 
     cur.execute("""
-        SELECT e.epoca, e.competicao, e.jogos, e.golos
-        FROM estatisticas_zerozero e
-        JOIN match_zerozero_fpf m
-            ON e.player_id = m.id_zerozero_atleta
-        WHERE m.player_id_fpf = %s
-        ORDER BY e.epoca DESC
+        SELECT epoca, competicao, jogos, golos
+        FROM estatisticas_zerozero
+        WHERE player_id = %s
+        ORDER BY epoca DESC
+
     """, (player_id,))
 
     rows = cur.fetchall()
