@@ -246,11 +246,18 @@ def ficha_jogador(player_id):
         SELECT epoca, competicao, jogos, golos
         FROM estatisticas_zerozero
         WHERE player_id = %s
-        ORDER BY epoca DESC
+        ORDER BY epoca DESC, competicao
 
     """, (player_id,))
 
     rows = cur.fetchall()
+
+    rows = sorted(
+        rows,
+        key=lambda x: (x["epoca"], x["competicao"]),
+        reverse=True
+)
+
 
     resumo_2025 = {"jogos": 0, "golos": 0}
 
